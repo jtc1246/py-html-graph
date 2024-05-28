@@ -5,12 +5,26 @@ const ACTION_UPDOWN = 10000003;
 var t = 0;
 const chart_element = document.getElementById('myChart');
 const ctx = document.getElementById('myChart').getContext('2d');
+var debug_element = document.getElementById('debug');
+var debug2_element = document.getElementById('debug2');
 
 // Generate sample data
-const totalDataPoints = 20000000;
-const origin_viewWindow = 800;
-let viewWindow = 800; // Number of data points to show in view window
+const totalDataPoints = 5000000;
+const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
+const window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
+_ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
+_ = 0                    // 暂定：初始情况为最小级，但是 window 大小为 3/4
+let viewWindow = 900; // 实际渲染时使用的数据点的数量
+let fake_window_size = 900; // 假设在不缩放的情况下，窗口内数据点的数量
+const origin_window_size = 900; // 原始窗口大小, 需要通过这个和 ratio 计算 fake_window_size
 let currentIndex = 0;
+/* 每次更新先更新 fake_window_size (ratio只是用于内部计算的，这里不做讨论)
+   1. 如果 fake_window_size 小于 window_max (大于 window_min)，level设成0，结束, viewWindow设为 fake_window_size
+   2. 如果 fake_window_size 大于 window_max, 每次除以2, level加1，直到小于等于 window_max 
+      (这里对等于的情况不做过多限制, 只要小于等于window_max、大于等于它的一半就行), 最后把值赋给 viewWindow
+   3. 渲染时按照 2^level 作为步长选取数据点, 共有 viewWindow 个数据点
+ */
+let level = 0; // 缩放级别，必须大于等于0，代表从 2^level 个数据点中选一个显示
 let ratio = 1.0;
 var mouseX = 0;
 
@@ -36,7 +50,7 @@ function createData() {
     return new Promise((resolve) => {
         for (let i = 0; i < numWorkers; i++) {
             const worker = new Worker('data_worker.js');
-            worker.onmessage = function(e) {
+            worker.onmessage = function (e) {
                 const { index, data } = e.data;
                 dataSets[index] = data;
                 completedWorkers++;
@@ -75,15 +89,32 @@ let myChart;
 var fps_datas = [];
 var last_update_time = 0;
 
+function slice(arr, start, end_plus_one, step) {
+    var result = [];
+    if(end_plus_one > arr.length) {
+        end_plus_one = arr.length;
+    }
+    for (var i = start; i < end_plus_one; i += step) {
+        result.push(arr[i]);
+    }
+    return result;
+}
+
 
 function createChart() {
+    debug2_element.innerHTML = `currentIndex: ${currentIndex}<br>fake_window_size: ${fake_window_size}<br>viewWindow: ${viewWindow}<br>level: ${level}<br>ratio: ${ratio}`;
+    var step = Math.pow(2, level);
+    var start = Math.floor(currentIndex);
+    var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
     const config = {
         type: 'line',
         data: {
-            labels: data.labels.slice((currentIndex), (currentIndex + viewWindow)),
+            // labels: data.labels.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
+            labels: slice(data.labels, start, end_plus_one, step),
             datasets: data.datasets.map(dataset => ({
                 ...dataset,
-                data: dataset.data.slice((currentIndex), (currentIndex + viewWindow)),
+                // data: dataset.data.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
+                data: slice(dataset.data, start, end_plus_one, step),
                 pointRadius: 0,
                 borderWidth: chart_element.clientHeight / 300,
                 tension: 0,
@@ -106,14 +137,14 @@ function createChart() {
                 x: {
                     type: 'linear',
                     min: (currentIndex),
-                    max: (currentIndex + viewWindow - 1),
+                    max: (currentIndex + fake_window_size),
                     display: false
                 },
                 y: {
-                    // display: false,
+                    display: false,
                     // 设置 y
-                    // min: -5,
-                    // max: 105
+                    min: 98,
+                    max: 102
                 }
             },
             interaction: {
@@ -180,34 +211,53 @@ function handle_wheel(event) {
     }
     if (action === ACTION_LEFTRIGHT) {
         console.log(`Left/Right, x: ${x}, y: ${y}`);
-        currentIndex += x * viewWindow / 1000;
+        currentIndex += x * fake_window_size / 1000;
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - viewWindow) {
-            currentIndex = totalDataPoints - viewWindow;
+        if (currentIndex > totalDataPoints - fake_window_size) {
+            currentIndex = totalDataPoints - fake_window_size;
         }
     }
     if (action === ACTION_UPDOWN) {
         console.log(`Up/Down, x: ${x}, y: ${y}`);
         ratio *= Math.pow(1.01, y);
-        if (ratio >= 1.5) {
-            ratio = 1.5;
+        // if (ratio >= 1.5) {
+        //     ratio = 1.5;
+        // }
+        // if (ratio <= 0.1) {
+        //     ratio = 0.1;
+        // }
+        var prev_fake_window_size = fake_window_size;
+        fake_window_size = origin_window_size * ratio;
+        if(fake_window_size < window_min) {
+            fake_window_size = window_min;
+            ratio = fake_window_size / origin_window_size;
         }
-        if (ratio <= 0.1) {
-            ratio = 0.1;
+        if(fake_window_size > totalDataPoints) {
+            fake_window_size = totalDataPoints;
+            ratio = fake_window_size / origin_window_size;
         }
         var mouse_x = getMousePosition();
-        var left_ratio = (mouse_x - currentIndex) / viewWindow;
-        viewWindow = origin_viewWindow * ratio;
-        currentIndex = mouse_x - viewWindow * left_ratio;
+        var left_ratio = (mouse_x - currentIndex) / prev_fake_window_size;
+        // viewWindow = window_max * ratio;
+        currentIndex = mouse_x - fake_window_size * left_ratio;
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - viewWindow) {
-            currentIndex = totalDataPoints - viewWindow;
+        if (currentIndex > totalDataPoints - fake_window_size) {
+            currentIndex = totalDataPoints - fake_window_size;
+        }
+        // 开始处理 level 和 viewWindow, 因为实际上前面只是计算范围, 
+        // 和实际渲染完全没关系, currentIndex 可以先计算好
+        level = 0;
+        viewWindow = fake_window_size;
+        while (viewWindow > window_max) {
+            viewWindow /= 2;
+            level++;
         }
     }
+    debug_element.innerHTML = `currentIndex: ${currentIndex}<br>fake_window_size: ${fake_window_size}<br>viewWindow: ${viewWindow}<br>level: ${level}<br>ratio: ${ratio}`;
     updateChart();
 }
 

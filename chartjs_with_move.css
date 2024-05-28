@@ -5,11 +5,6 @@
     overflow: hidden;
 }
 
-#fps {
-    padding-top: 0.5vw;
-    padding-left: 2vw;
-}
-
 #main {
     display: flex;
     flex-direction: column;
@@ -108,4 +103,23 @@ html {
 
 * {
     color: #282828;
+}
+
+#fps {
+    padding-top: 0.5vw;
+    padding-left: 2vw;
+}
+
+#debug {
+    padding-top: 0.5vw;
+    padding-left: 2vw;
+    line-height: 1.2;
+    font-size: 1.5vw;
+}
+
+#debug2 {
+    padding-top: 0.5vw;
+    padding-left: 2vw;
+    line-height: 1.2;
+    font-size: 1.5vw;
 }

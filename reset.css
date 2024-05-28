@@ -39,3 +39,7 @@
 head {
     display: none;
 }
+
+html {
+    overflow: scroll;
+}

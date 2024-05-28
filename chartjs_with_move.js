@@ -22,54 +22,58 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
-var data;
+// var data;
 
-const numWorkers = 10;
-const workers = [];
-const dataSets = new Array(numWorkers).fill(null);
-let completedWorkers = 0;
-var all_finished = false;
-var generating_start_time = performance.now();
+function generateDataSequence(length) {
+    const data = [];
+    let currentValue = Math.random() * 100 - 50; // 生成第一个数，范围在-50到50之间
+    data.push(currentValue);
 
-// 创建一个函数来使用 Promise 等待所有 Worker 完成任务
-function createData() {
-    return new Promise((resolve) => {
-        for (let i = 0; i < numWorkers; i++) {
-            const worker = new Worker('data_worker.js');
-            worker.onmessage = function(e) {
-                const { index, data } = e.data;
-                dataSets[index] = data;
-                completedWorkers++;
-                // if (dataSets.every(ds => ds !== null)) {
-                //     resolve(dataSets);
-                // }
-                if (completedWorkers === numWorkers) {
-                    resolve(dataSets);
-                }
-            };
-            workers.push(worker);
-        }
+    for (let i = 1; i < length; i++) {
+        const randomChange = Math.random() * 5 - 2.5; // 生成-1到1之间的随机浮点数
+        currentValue += randomChange;
+        data.push(currentValue);
+    }
 
-        workers.forEach((worker, index) => {
-            worker.postMessage({ totalDataPoints: totalDataPoints, seed: index });
-        });
-    });
+    return data;
 }
 
-createData().then((dataSets) => {
-    data = {
-        labels: Array.from({ length: totalDataPoints }, (_, i) => i),
-        datasets: dataSets.map((data, i) => ({
-            label: `Variable ${i + 1}`,
-            data: data
-        }))
-    };
-    all_finished = true;
-    console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
-    updateChart();
-    element.addEventListener('wheel', handle_wheel, { passive: false });
-    window.addEventListener('resize', updateChart);
-});
+const S0 = 100; // 初始价格
+const mu = 0.0002; // 期望收益率
+const sigma = 0.01; // 波动率
+const dt = 1 / 252; // 时间步长，假设一年有252个交易日
+var start_time = performance.now();
+// const seedrandom = require('seedrandom');
+
+function generateDataSequence(length, seed) {
+    const myrng = new Math.seedrandom(`jtc${seed}`);
+    const data = [];
+    let currentValue = S0; // 初始价格
+    data.push(currentValue);
+
+    for (let i = 1; i < length; i++) {
+        // const randomShock = Math.random() * 2 - 1; // -1 到 1 的随机数
+        const randomShock = myrng() * 2 - 1; // -1 到 1 的随机数
+        const drift = (mu - 0.5 * sigma * sigma) * dt;
+        const diffusion = sigma * randomShock * Math.sqrt(dt);
+        currentValue = currentValue * Math.exp(drift + diffusion);
+        data.push(currentValue);
+    }
+
+    return data;
+}
+
+const data = {
+    labels: Array.from({ length: totalDataPoints }, (_, i) => i),
+    datasets: Array.from({ length: 10 }, (_, i) => ({
+        label: `Variable ${i + 1}`,
+        // data: Array.from({ length: totalDataPoints }, () => Math.random() * 100),
+        data: generateDataSequence(totalDataPoints, i),
+        // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+        // borderColor: `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
+    }))
+};
+console.log(`Data generation time: ${performance.now() - start_time} ms`);
 
 let myChart;
 var fps_datas = [];
@@ -213,8 +217,8 @@ function handle_wheel(event) {
 
 var element = document.getElementById('myChart');
 
-// element.addEventListener('wheel', handle_wheel, { passive: false });
-// window.addEventListener('resize', updateChart);
+element.addEventListener('wheel', handle_wheel, { passive: false });
+window.addEventListener('resize', updateChart);
 
 function getMousePosition() {
     const canvas = document.getElementById('myChart');
@@ -224,4 +228,6 @@ function getMousePosition() {
     // console.log(xValue);
     return xValue;
 }
+
+updateChart();
 

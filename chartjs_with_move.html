@@ -7,28 +7,19 @@
     <title>Chart.js Performance Test</title>
     <script src="chart.js"></script>
     <link rel="stylesheet" href="reset.css">
-    <style>
-        #myChart {
-            width: 100%;
-            height: 30vw;
-            max-height: 30vw;
-        }
-
-        #fps {
-            padding-top: 0.5vw;
-            padding-left: 2vw;
-        }
-
-        #main {
-            display: flex;
-            flex-direction: column;
-        }
-    </style>
+    <link rel="stylesheet" href="chartjs_with_move.css">
 </head>
 
 <body>
     <main id="main">
-        <canvas id="myChart"></canvas>
+        <div id="wrapper">
+            <div id="force-overflow-hidden">
+                <canvas id="myChart"></canvas>
+            </div>
+            <h1 id="title">This is a title!</h1>
+            <div id="x"></div>
+            <div id="y"></div>
+        </div>
         <p id="fps">FPS: 0</p>
     </main>
     <script src="chartjs_with_move.js">

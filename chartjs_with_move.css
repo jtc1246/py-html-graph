@@ -1,0 +1,56 @@
+#myChart {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#fps {
+    padding-top: 0.5vw;
+    padding-left: 2vw;
+}
+
+#main {
+    display: flex;
+    flex-direction: column;
+}
+
+#wrapper {
+    width: 100%;
+    height: 35vw;
+    display: grid;
+    grid-template-columns: 1fr 18.5fr 1.5fr;
+    grid-template-rows: 1fr 8fr 1fr;
+    justify-content: center;
+    align-items: center;
+    justify-items: center;
+}
+
+#force-overflow-hidden {
+    overflow: hidden;
+    grid-area: 2 / 2 / 3 / 3;
+    width: 100%;
+    height: 100%;
+}
+
+#title {
+    grid-area: 1 / 2 / 2 / 3;
+    font-size: 2vw;
+    line-height: 3.5vw; /* 计算得出的，如果 grid 高度或title占比发生改变，这里需要修改 */
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+#x {
+    grid-area: 3 / 2 / 4 / 3;
+    background-color: yellow;
+    width: 100%;
+    height: 100%;
+}
+
+#y {
+    grid-area: 2 / 1 / 3 / 2;
+    background-color: yellow;
+    width: 100%;
+    height: 100%;
+}

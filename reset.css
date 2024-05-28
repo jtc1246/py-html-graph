@@ -17,6 +17,7 @@
     border-radius: 0;
     border-collapse: collapse;
     border-spacing: 0;
+    font-weight: 400;
 }
 
 *:visited, *:active, *:hover, *:focus, *:focus-within, *:focus-visible, *:checked {

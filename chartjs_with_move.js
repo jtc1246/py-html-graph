@@ -3,6 +3,7 @@ const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;
 
 var t = 0;
+const chart_element = document.getElementById('myChart');
 const ctx = document.getElementById('myChart').getContext('2d');
 
 // Generate sample data
@@ -25,7 +26,9 @@ const data = {
     labels: Array.from({ length: totalDataPoints }, (_, i) => i),
     datasets: Array.from({ length: 10 }, (_, i) => ({
         label: `Variable ${i + 1}`,
-        data: Array.from({ length: totalDataPoints }, () => Math.random() * 100)
+        data: Array.from({ length: totalDataPoints }, () => Math.random() * 100),
+        // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+        // borderColor: `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
     }))
 };
 
@@ -43,7 +46,7 @@ function createChart() {
                 ...dataset,
                 data: dataset.data.slice((currentIndex), (currentIndex + viewWindow)),
                 pointRadius: 0,
-                borderWidth: 2,
+                borderWidth: chart_element.clientHeight / 300,
                 tension: 0,
                 borderJoinStyle: 'round'
             }))
@@ -68,7 +71,10 @@ function createChart() {
                     display: false
                 },
                 y: {
-                    display: false
+                    display: false,
+                    // 设置 y
+                    // min: -5,
+                    // max: 105
                 }
             },
             interaction: {
@@ -90,6 +96,10 @@ function updateChart() {
     // console.log(`${performance.now() - t1} ms`);
     var time = performance.now() - t;
     console.log(`${time} ms`);
+    if (time > 150) {
+        t = performance.now();
+        return;
+    }
     fps_datas.push(time);
     if (fps_datas.length > 10) {
         fps_datas.shift();
@@ -165,15 +175,19 @@ function handle_wheel(event) {
 var element = document.getElementById('myChart');
 
 element.addEventListener('wheel', handle_wheel, { passive: false });
+window.addEventListener('resize', updateChart);
 
 function getMousePosition() {
     const canvas = document.getElementById('myChart');
     const rect = canvas.getBoundingClientRect();
     const mouse_X = mouseX - rect.left;
     const xValue = myChart.scales.x.getValueForPixel(mouse_X);
+    // console.log(xValue);
     return xValue;
 }
 
 updateChart();
 
-
+// window.addEventListener('click', function (event) {
+//     getMousePosition();
+// });

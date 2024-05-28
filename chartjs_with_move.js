@@ -52,11 +52,23 @@ function createChart() {
             animation: false,
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false  // 不显示图例
+                },
+                tooltip: {
+                    enabled: false  // 关闭工具提示
+                }
+            },
             scales: {
                 x: {
                     type: 'linear',
                     min: (currentIndex),
-                    max: (currentIndex + viewWindow - 1)
+                    max: (currentIndex + viewWindow - 1),
+                    display: false
+                },
+                y: {
+                    display: false
                 }
             },
             interaction: {

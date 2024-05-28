@@ -22,55 +22,6 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
-// function generateDataSequence(length) {
-//     const data = [];
-//     let currentValue = Math.random() * 100 - 50; // 生成第一个数，范围在-50到50之间
-//     data.push(currentValue);
-
-//     for (let i = 1; i < length; i++) {
-//         const randomChange = Math.random() * 5 - 2.5; // 生成-1到1之间的随机浮点数
-//         currentValue += randomChange;
-//         data.push(currentValue);
-//     }
-
-//     return data;
-// }
-
-const S0 = 100; // 初始价格
-const mu = 0.0002; // 期望收益率
-const sigma = 0.01; // 波动率
-const dt = 1 / 252; // 时间步长，假设一年有252个交易日
-// const seedrandom = require('seedrandom');
-
-function generateDataSequence(length, seed) {
-    const myrng = new Math.seedrandom(`jtc${seed}`);
-    const data = [];
-    let currentValue = S0; // 初始价格
-    data.push(currentValue);
-
-    for (let i = 1; i < length; i++) {
-        // const randomShock = Math.random() * 2 - 1; // -1 到 1 的随机数
-        const randomShock = myrng() * 2 - 1; // -1 到 1 的随机数
-        const drift = (mu - 0.5 * sigma * sigma) * dt;
-        const diffusion = sigma * randomShock * Math.sqrt(dt);
-        currentValue = currentValue * Math.exp(drift + diffusion);
-        data.push(currentValue);
-    }
-
-    return data;
-}
-
-// const data = {
-//     labels: Array.from({ length: totalDataPoints }, (_, i) => i),
-//     datasets: Array.from({ length: 10 }, (_, i) => ({
-//         label: `Variable ${i + 1}`,
-//         // data: Array.from({ length: totalDataPoints }, () => Math.random() * 100),
-//         data: generateDataSequence(totalDataPoints, i),
-//         // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
-//         // borderColor: `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
-//     }))
-// };
-
 var data;
 
 const numWorkers = 10;
@@ -78,6 +29,7 @@ const workers = [];
 const dataSets = new Array(numWorkers).fill(null);
 let completedWorkers = 0;
 var all_finished = false;
+var generating_start_time = performance.now();
 
 // 创建一个函数来使用 Promise 等待所有 Worker 完成任务
 function createData() {
@@ -103,10 +55,8 @@ function createData() {
         });
     });
 }
-console.log('111');
-// 使用 Promise 来等待数据生成完成
+
 createData().then((dataSets) => {
-    console.log('222');
     data = {
         labels: Array.from({ length: totalDataPoints }, (_, i) => i),
         datasets: dataSets.map((data, i) => ({
@@ -114,25 +64,12 @@ createData().then((dataSets) => {
             data: data
         }))
     };
-    console.log('333');
     all_finished = true;
+    console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
     updateChart();
-    // console.log(data);
-    // 使用返回的数据进行图表绘制
-    // Example: drawChart(data);
+    element.addEventListener('wheel', handle_wheel, { passive: false });
+    window.addEventListener('resize', updateChart);
 });
-// function blockMainThread() {
-//     const start = Date.now();
-//     while (all_finished === false) {
-//         // 运行一些空操作
-//         if (Date.now() - start > 10000) { // 防止无限阻塞，设定一个超时时间（例如10秒）
-//             break;
-//         }
-//     }
-// }
-
-// blockMainThread();
-console.log('444');
 
 let myChart;
 var fps_datas = [];
@@ -276,8 +213,8 @@ function handle_wheel(event) {
 
 var element = document.getElementById('myChart');
 
-element.addEventListener('wheel', handle_wheel, { passive: false });
-window.addEventListener('resize', updateChart);
+// element.addEventListener('wheel', handle_wheel, { passive: false });
+// window.addEventListener('resize', updateChart);
 
 function getMousePosition() {
     const canvas = document.getElementById('myChart');
@@ -288,8 +225,3 @@ function getMousePosition() {
     return xValue;
 }
 
-// updateChart();
-
-// window.addEventListener('click', function (event) {
-//     getMousePosition();
-// });

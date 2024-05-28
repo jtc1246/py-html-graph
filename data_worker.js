@@ -1,4 +1,4 @@
-importScripts('https://cdn.jsdelivr.net/npm/seedrandom');
+importScripts('chart.js');
 
 function generateDataSequence(length, seed) {
     const S0 = 100; // 初始价格

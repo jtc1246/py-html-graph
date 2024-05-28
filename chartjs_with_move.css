@@ -111,15 +111,24 @@ html {
 }
 
 #debug {
-    padding-top: 0.5vw;
-    padding-left: 2vw;
+    /* padding-top: 0.5vw;
+    padding-left: 2vw; */
     line-height: 1.2;
     font-size: 1.5vw;
+    width: 30%;
 }
 
 #debug2 {
-    padding-top: 0.5vw;
-    padding-left: 2vw;
+    /* padding-top: 0.5vw;
+    padding-left: 2vw; */
     line-height: 1.2;
     font-size: 1.5vw;
+    width: 30%;
+}
+
+#debug-container {
+    padding-left: 2vw;
+    padding-right: 2vw;
+    padding-top: 0.5vw;
+    display: flex;
 }

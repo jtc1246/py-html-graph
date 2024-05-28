@@ -102,7 +102,7 @@ function slice(arr, start, end_plus_one, step) {
 
 
 function createChart() {
-    debug2_element.innerHTML = `currentIndex: ${currentIndex}<br>fake_window_size: ${fake_window_size}<br>viewWindow: ${viewWindow}<br>level: ${level}<br>ratio: ${ratio}`;
+    debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
     var step = Math.pow(2, level);
     var start = Math.floor(currentIndex);
     var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
@@ -257,7 +257,7 @@ function handle_wheel(event) {
             level++;
         }
     }
-    debug_element.innerHTML = `currentIndex: ${currentIndex}<br>fake_window_size: ${fake_window_size}<br>viewWindow: ${viewWindow}<br>level: ${level}<br>ratio: ${ratio}`;
+    debug_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
     updateChart();
 }
 

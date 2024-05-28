@@ -92,29 +92,29 @@ var last_update_time = 0;
 function slice(arr, start, end_plus_one, step) {
     var result = [];
     var origin_end_plus_one = end_plus_one;
-    if(end_plus_one > arr.length) {
+    if (end_plus_one > arr.length) {
         end_plus_one = arr.length;
     }
-    if(start>=0){
+    if (start >= 0) {
         result.push(arr[start]);
-    }else{
+    } else {
         result.push(arr[0]);
     }
-    for (var i = start+step; i < end_plus_one; i += step) {
+    for (var i = start + step; i < end_plus_one; i += step) {
         result.push(arr[i]);
     }
     var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
     // console.log(`ideal_length: ${ideal_length}, real_length: ${result.length}`);
-    if(result.length < ideal_length) {
+    if (result.length < ideal_length) {
         // console.log('added last')
-        result.push(arr[arr.length-1]);
+        result.push(arr[arr.length - 1]);
     }
     return result;
 }
 
 var fix_down_with_remainder = (num, multiple, remainder) => {
     var tmp = num % multiple;
-    if(tmp>=remainder) {
+    if (tmp >= remainder) {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp - multiple + remainder);
@@ -122,7 +122,7 @@ var fix_down_with_remainder = (num, multiple, remainder) => {
 
 var fix_up_with_remainder = (num, multiple, remainder) => {
     var tmp = num % multiple;
-    if(tmp<=remainder) {
+    if (tmp <= remainder) {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp + multiple + remainder);
@@ -135,11 +135,11 @@ function createChart() {
     // var start = Math.floor(currentIndex);
     // var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
     var remainder = 0;
-    if(level !==0){
-        remainder = Math.pow(2, level-1);
+    if (level !== 0) {
+        remainder = Math.pow(2, level - 1);
     }
     var start = fix_down_with_remainder(currentIndex, step, remainder);
-    var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder)+1;
+    var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     // console.log(`start: ${start}, end_plus_one: ${end_plus_one}`);
     const config = {
         type: 'line',
@@ -250,8 +250,8 @@ function handle_wheel(event) {
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - fake_window_size-1) {
-            currentIndex = totalDataPoints - fake_window_size-1;
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
         }
     }
     if (action === ACTION_UPDOWN) {
@@ -265,12 +265,12 @@ function handle_wheel(event) {
         // }
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
-        if(fake_window_size < window_min) {
+        if (fake_window_size < window_min) {
             fake_window_size = window_min;
             ratio = fake_window_size / origin_window_size;
         }
-        if(fake_window_size > totalDataPoints-1) {
-            fake_window_size = totalDataPoints-1;
+        if (fake_window_size > totalDataPoints - 1) {
+            fake_window_size = totalDataPoints - 1;
             ratio = fake_window_size / origin_window_size;
         }
         var mouse_x = getMousePosition();
@@ -280,8 +280,8 @@ function handle_wheel(event) {
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - fake_window_size-1) {
-            currentIndex = totalDataPoints - fake_window_size-1;
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
         }
         // 开始处理 level 和 viewWindow, 因为实际上前面只是计算范围, 
         // 和实际渲染完全没关系, currentIndex 可以先计算好

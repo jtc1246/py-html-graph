@@ -91,21 +91,56 @@ var last_update_time = 0;
 
 function slice(arr, start, end_plus_one, step) {
     var result = [];
+    var origin_end_plus_one = end_plus_one;
     if(end_plus_one > arr.length) {
         end_plus_one = arr.length;
     }
-    for (var i = start; i < end_plus_one; i += step) {
+    if(start>=0){
+        result.push(arr[start]);
+    }else{
+        result.push(arr[0]);
+    }
+    for (var i = start+step; i < end_plus_one; i += step) {
         result.push(arr[i]);
     }
+    var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
+    // console.log(`ideal_length: ${ideal_length}, real_length: ${result.length}`);
+    if(result.length < ideal_length) {
+        // console.log('added last')
+        result.push(arr[arr.length-1]);
+    }
     return result;
+}
+
+var fix_down_with_remainder = (num, multiple, remainder) => {
+    var tmp = num % multiple;
+    if(tmp>=remainder) {
+        return Math.round(num - tmp + remainder);
+    }
+    return Math.round(num - tmp - multiple + remainder);
+}
+
+var fix_up_with_remainder = (num, multiple, remainder) => {
+    var tmp = num % multiple;
+    if(tmp<=remainder) {
+        return Math.round(num - tmp + remainder);
+    }
+    return Math.round(num - tmp + multiple + remainder);
 }
 
 
 function createChart() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
     var step = Math.pow(2, level);
-    var start = Math.floor(currentIndex);
-    var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
+    // var start = Math.floor(currentIndex);
+    // var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
+    var remainder = 0;
+    if(level !==0){
+        remainder = Math.pow(2, level-1);
+    }
+    var start = fix_down_with_remainder(currentIndex, step, remainder);
+    var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder)+1;
+    // console.log(`start: ${start}, end_plus_one: ${end_plus_one}`);
     const config = {
         type: 'line',
         data: {
@@ -143,8 +178,8 @@ function createChart() {
                 y: {
                     display: false,
                     // 设置 y
-                    min: 98,
-                    max: 102
+                    // min: 98,
+                    // max: 102
                 }
             },
             interaction: {
@@ -165,7 +200,7 @@ function updateChart() {
     myChart = createChart();
     // console.log(`${performance.now() - t1} ms`);
     var time = performance.now() - t;
-    console.log(`${time} ms`);
+    // console.log(`${time} ms`);
     if (time > 500) {
         t = performance.now();
         return;
@@ -206,21 +241,21 @@ function handle_wheel(event) {
         action = ACTION_IGNORE;
     }
     if (action === ACTION_IGNORE) {
-        console.log(`Ignored, x: ${x}, y: ${y}`);
+        // console.log(`Ignored, x: ${x}, y: ${y}`);
         return;
     }
     if (action === ACTION_LEFTRIGHT) {
-        console.log(`Left/Right, x: ${x}, y: ${y}`);
+        // console.log(`Left/Right, x: ${x}, y: ${y}`);
         currentIndex += x * fake_window_size / 1000;
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - fake_window_size) {
-            currentIndex = totalDataPoints - fake_window_size;
+        if (currentIndex > totalDataPoints - fake_window_size-1) {
+            currentIndex = totalDataPoints - fake_window_size-1;
         }
     }
     if (action === ACTION_UPDOWN) {
-        console.log(`Up/Down, x: ${x}, y: ${y}`);
+        // console.log(`Up/Down, x: ${x}, y: ${y}`);
         ratio *= Math.pow(1.01, y);
         // if (ratio >= 1.5) {
         //     ratio = 1.5;
@@ -234,8 +269,8 @@ function handle_wheel(event) {
             fake_window_size = window_min;
             ratio = fake_window_size / origin_window_size;
         }
-        if(fake_window_size > totalDataPoints) {
-            fake_window_size = totalDataPoints;
+        if(fake_window_size > totalDataPoints-1) {
+            fake_window_size = totalDataPoints-1;
             ratio = fake_window_size / origin_window_size;
         }
         var mouse_x = getMousePosition();
@@ -245,8 +280,8 @@ function handle_wheel(event) {
         if (currentIndex < 0) {
             currentIndex = 0;
         }
-        if (currentIndex > totalDataPoints - fake_window_size) {
-            currentIndex = totalDataPoints - fake_window_size;
+        if (currentIndex > totalDataPoints - fake_window_size-1) {
+            currentIndex = totalDataPoints - fake_window_size-1;
         }
         // 开始处理 level 和 viewWindow, 因为实际上前面只是计算范围, 
         // 和实际渲染完全没关系, currentIndex 可以先计算好

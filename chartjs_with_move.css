@@ -96,7 +96,7 @@
 /* 4. For the labels */
 
 
-/* 5. Following is fot thr general page */
+/* 5. For thr general page */
 html {
     background-color: #eee;
 }
@@ -105,6 +105,8 @@ html {
     color: #282828;
 }
 
+
+/* 6. Debug information */
 #fps {
     padding-top: 0.5vw;
     padding-left: 2vw;

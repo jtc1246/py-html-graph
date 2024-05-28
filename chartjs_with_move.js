@@ -30,6 +30,8 @@ const data = {
 };
 
 let myChart;
+var fps_datas = [];
+var last_update_time = 0;
 
 
 function createChart() {
@@ -42,7 +44,7 @@ function createChart() {
                 data: dataset.data.slice((currentIndex), (currentIndex + viewWindow)),
                 pointRadius: 0,
                 borderWidth: 2,
-                tension: 0, 
+                tension: 0,
                 borderJoinStyle: 'round'
             }))
         },
@@ -76,9 +78,21 @@ function updateChart() {
     // console.log(`${performance.now() - t1} ms`);
     var time = performance.now() - t;
     console.log(`${time} ms`);
-    var fps = 1000 / time;
-    var e=document.getElementById("fps");
-    e.innerHTML = `FPS: ${fps.toFixed(2)}`;
+    fps_datas.push(time);
+    if (fps_datas.length > 10) {
+        fps_datas.shift();
+    }
+    if (performance.now() - last_update_time > 150) {
+        last_update_time = performance.now();
+        var sum = 0;
+        for (var i = 0; i < fps_datas.length; i++) {
+            sum += fps_datas[i];
+        }
+        time = sum / fps_datas.length;
+        var fps = 1000 / time;
+        var e = document.getElementById("fps");
+        e.innerHTML = `FPS: ${fps.toFixed(2)}`;
+    }
     t = performance.now();
 }
 

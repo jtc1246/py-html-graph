@@ -1,0 +1,41 @@
+* {
+    line-height: 1;
+    font-size: 2vw;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    text-decoration: none;
+    overflow: hidden;
+    box-sizing: border-box;
+    color: #000;
+    background-color: rgba(1, 1, 1, 0);
+    font-family: sans-serif;
+    display: block;
+    list-style: none;
+    flex-direction: row;
+    gap: 0;
+    border-radius: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+*:visited, *:active, *:hover, *:focus, *:focus-within, *:focus-visible, *:checked {
+    color: #000;
+    outline: 0;
+    text-decoration: none;
+    background-color: rgba(1, 1, 1, 0);
+}
+
+*::before {
+    content: '';
+    display: none;
+}
+
+*::after {
+    content: '';
+    display: none;
+}
+
+head {
+    display: none;
+}

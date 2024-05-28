@@ -39,7 +39,11 @@ function createChart() {
             labels: data.labels.slice((currentIndex), (currentIndex + viewWindow)),
             datasets: data.datasets.map(dataset => ({
                 ...dataset,
-                data: dataset.data.slice((currentIndex), (currentIndex + viewWindow))
+                data: dataset.data.slice((currentIndex), (currentIndex + viewWindow)),
+                pointRadius: 0,
+                borderWidth: 2,
+                tension: 0, 
+                borderJoinStyle: 'round'
             }))
         },
         options: {
@@ -52,6 +56,9 @@ function createChart() {
                     min: (currentIndex),
                     max: (currentIndex + viewWindow - 1)
                 }
+            },
+            interaction: {
+                mode: null  // 禁用鼠标悬停显示数据点信息
             }
         }
     };
@@ -61,13 +68,17 @@ function createChart() {
 
 // Function to update the chart view window by recreating the chart
 function updateChart() {
-    var t1 = performance.now();
+    // var t1 = performance.now();
     if (myChart) {
         myChart.destroy();
     }
     myChart = createChart();
     // console.log(`${performance.now() - t1} ms`);
-    console.log(`${performance.now() - t} ms`);
+    var time = performance.now() - t;
+    console.log(`${time} ms`);
+    var fps = 1000 / time;
+    var e=document.getElementById("fps");
+    e.innerHTML = `FPS: ${fps.toFixed(2)}`;
     t = performance.now();
 }
 

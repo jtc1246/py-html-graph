@@ -96,7 +96,7 @@ function updateChart() {
     // console.log(`${performance.now() - t1} ms`);
     var time = performance.now() - t;
     console.log(`${time} ms`);
-    if (time > 150) {
+    if (time > 500) {
         t = performance.now();
         return;
     }

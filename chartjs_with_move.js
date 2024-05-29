@@ -63,9 +63,6 @@ function createData() {
                 const { index, data } = e.data;
                 dataSets[index] = data;
                 completedWorkers++;
-                // if (dataSets.every(ds => ds !== null)) {
-                //     resolve(dataSets);
-                // }
                 if (completedWorkers === numWorkers) {
                     resolve(dataSets);
                 }
@@ -80,11 +77,9 @@ function createData() {
 }
 
 var find_global_min_max = (data) => {
-    // console.log(data.length);
     for (var i = 0; i < data.length; i++) {
         var current = data[i].data;
         var l = current.length;
-        // console.log(`l: ${l}`);
         for (var j = 0; j < l; j++) {
             if (current[j] > global_max) {
                 global_max = current[j];
@@ -132,7 +127,6 @@ var get_y_min = () => {
         return global_min;
     }
     update_range();
-    // console.log(`current_min: ${current_min}`);
     return prev_y_min;
 }
 
@@ -140,7 +134,6 @@ var get_y_max = () => {
     if (fix_y) {
         return global_max;
     }
-    // console.log(`current_max: ${current_max}`);
     return prev_y_max;
 }
 
@@ -181,9 +174,7 @@ function slice_no_min_max(arr, start, end_plus_one, step) {
         result.push(arr[i]);
     }
     var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
-    // console.log(`ideal_length: ${ideal_length}, real_length: ${result.length}`);
     if (result.length < ideal_length) {
-        // console.log('added last')
         result.push(arr[arr.length - 1]);
     }
     return result;
@@ -222,9 +213,7 @@ function slice(arr, start, end_plus_one, step) {
         }
     }
     var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
-    // console.log(`ideal_length: ${ideal_length}, real_length: ${result.length}`);
     if (result.length < ideal_length) {
-        // console.log('added last')
         result.push(arr[arr.length - 1]);
         if (arr[arr.length - 1] > current_max) {
             current_max = arr[arr.length - 1];
@@ -256,25 +245,20 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
 function createChart() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
     var step = Math.pow(2, level);
-    // var start = Math.floor(currentIndex);
-    // var end_plus_one = Math.floor(currentIndex + fake_window_size + 2*step);
     var remainder = 0;
     if (level !== 0) {
         remainder = Math.pow(2, level - 1);
     }
     var start = fix_down_with_remainder(currentIndex, step, remainder);
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
-    // console.log(`start: ${start}, end_plus_one: ${end_plus_one}`);
     current_min = Number.MAX_VALUE;
     current_max = Number.MIN_VALUE;
     const config = {
         type: 'line',
         data: {
-            // labels: data.labels.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
             labels: slice_no_min_max(data.labels, start, end_plus_one, step),
             datasets: data.datasets.map(dataset => ({
                 ...dataset,
-                // data: dataset.data.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
                 data: slice(dataset.data, start, end_plus_one, step),
                 pointRadius: 0,
                 borderWidth: chart_element.clientHeight / 300,
@@ -324,9 +308,7 @@ function updateChart() {
         myChart.destroy();
     }
     myChart = createChart();
-    // console.log(`${performance.now() - t1} ms`);
     var time = performance.now() - t;
-    // console.log(`${time} ms`);
     if (time > 500) {
         t = performance.now();
         return;
@@ -367,11 +349,9 @@ function handle_wheel(event) {
         action = ACTION_IGNORE;
     }
     if (action === ACTION_IGNORE) {
-        // console.log(`Ignored, x: ${x}, y: ${y}`);
         return;
     }
     if (action === ACTION_LEFTRIGHT) {
-        // console.log(`Left/Right, x: ${x}, y: ${y}`);
         currentIndex += x * fake_window_size / 1000;
         if (currentIndex < 0) {
             currentIndex = 0;
@@ -381,14 +361,7 @@ function handle_wheel(event) {
         }
     }
     if (action === ACTION_UPDOWN) {
-        // console.log(`Up/Down, x: ${x}, y: ${y}`);
         ratio *= Math.pow(1.01, y);
-        // if (ratio >= 1.5) {
-        //     ratio = 1.5;
-        // }
-        // if (ratio <= 0.1) {
-        //     ratio = 0.1;
-        // }
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {
@@ -401,7 +374,6 @@ function handle_wheel(event) {
         }
         var mouse_x = getMousePosition();
         var left_ratio = (mouse_x - currentIndex) / prev_fake_window_size;
-        // viewWindow = window_max * ratio;
         currentIndex = mouse_x - fake_window_size * left_ratio;
         if (currentIndex < 0) {
             currentIndex = 0;
@@ -424,9 +396,6 @@ function handle_wheel(event) {
 
 var element = document.getElementById('myChart');
 
-// element.addEventListener('wheel', handle_wheel, { passive: false });
-// window.addEventListener('resize', updateChart);
-
 function getMousePosition() {
     const canvas = document.getElementById('myChart');
     const rect = canvas.getBoundingClientRect();
@@ -443,6 +412,5 @@ fix_y_checkbox.addEventListener('change', () => {
     } else {
         fix_y = false;
     }
-    // console.log(`fix_y: ${fix_y}`);
     updateChart();
 });

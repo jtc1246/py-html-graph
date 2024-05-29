@@ -66,19 +66,19 @@ var set_y_value = (min, max) => {
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
     var num = (max - min) / interval;
-    if (start*interval - min < interval * 0.5) {
+    if (start * interval - min < interval * 0.5) {
         start += 1
     }
-    if (max - end*interval < interval * 0.5) {
+    if (max - end * interval < interval * 0.5) {
         end -= 1
     }
     delete_y_values_scales();
     var height_in_vw = get_chart_height_in_vw();
     var y_axis = document.getElementById("y");
     var offset;
-    if(start*interval - min < max - end*interval){
+    if (start * interval - min < max - end * interval) {
         offset = -0.75
-    }else{
+    } else {
         offset = 0.1
     }
     for (var i = start; i <= end; i++) {

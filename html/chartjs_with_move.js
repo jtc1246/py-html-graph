@@ -98,10 +98,10 @@ var update_range = () => {
        每次更新, 把 max 上调 1/3, min 下调 1/3
        如果 max大于global_max 或 min小于global_min, 就使用 global_max 或 global_min
      */
-    if(lock_y){
+    if (lock_y) {
         return;
     }
-    if(fit_y_current){
+    if (fit_y_current) {
         diff = current_max - current_min;
         prev_y_max = current_max + diff * 0.02;
         prev_y_min = current_min - diff * 0.02;
@@ -427,8 +427,8 @@ var fix_y_checkbox = document.getElementById('fix-y');
 var fix_y_wrapper = document.getElementById('fix-y-wrapper');
 var fix_y_mask_element = document.getElementById('fix-y-mask');
 fix_y_checkbox.addEventListener('change', () => {
-    if(lock_y){
-        if(fix_y_checkbox.checked){
+    if (lock_y) {
+        if (fix_y_checkbox.checked) {
             fix_y_checkbox.checked = false;
         }
         return;
@@ -455,7 +455,7 @@ var fit_current = () => {
 var lock_y_checkbox = document.getElementById('lock-y');
 lock_y_checkbox.addEventListener('change', () => {
     if (lock_y_checkbox.checked) {
-        if(fix_y){
+        if (fix_y) {
             prev_y_max = global_max;
             prev_y_min = global_min;
         }

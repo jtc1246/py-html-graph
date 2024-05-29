@@ -43,3 +43,7 @@ head {
 html {
     overflow: scroll;
 }
+
+script {
+    display: none;
+}

@@ -26,6 +26,7 @@
                 <div id="y-bottom-scale" class="y-scale"></div>
                 <p id="y-top-value" class="y-value y-value-fixed">test1</p>
                 <p id="y-bottom-value" class="y-value y-value-fixed">test2</p>
+                <p id="y-title">The description of Y.</p>
             </div>
             <div id="downleft">
                 <div id="downleft-corner"></div>
@@ -45,6 +46,25 @@
                 <input type="checkbox" id="lock-y">
                 <p id="lock-y-text">Lock Y range</p>
             </label>
+            <label id="lock-graph-wrapper">
+                <input type="checkbox" id="lock-graph">
+                <p id="lock-graph-text">Lock entire graph</p>
+            </label>
+            <div id="y-format">
+                <p id="y-value-text">Y value:</p>
+                <label id="decimal-wrapper">
+                    <input type="radio" id="y-decimal" name="qehbwrnw" onclick="to_decimal()">
+                    <p id="decimal-text">Decimal</p>
+                </label>
+                <div id="y-blank-1"></div>
+                <label id="scientific-wrapper">
+                    <input type="radio" id="y-scientific" name="qehbwrnw" onclick="to_scientific()">
+                    <p id="scientific-text">Scientific</p>
+                </label>
+                <div id="y-blank-2"></div>
+                <input type="text" id="y-digits" value="2">
+                <p id="y-digits-text">digits</p>
+            </div>
         </div>
         <p id="fps">FPS: 0</p>
         <div id="debug-container">

@@ -19,6 +19,9 @@
     border-collapse: collapse;
     border-spacing: 0;
     font-weight: 400;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-flow: nowrap;
 }
 
 /* To disable the behavior in specific status */

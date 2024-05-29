@@ -13,6 +13,9 @@ var y_type = Y_TYPE_UNSELECTED;
 var y_sci_digits = 3; // 有效位数, 包含小数点前的
 var y_dec_digits = 2; // 小数位数
 
+var y_range_prev_min = 0;
+var y_range_prev_max = 0;
+
 /* Y 的间距:
    1. 分为 0.1 0.2 0.25 0.5 (*10^n) 等级
    2. 选择可以让间距数大于等于 5 的最大间距 (直接用差除以间距, 不考虑两端、是否显示等因素)
@@ -59,9 +62,23 @@ var get_chart_height_in_vw = () => {
     return vw;
 }
 
+var encode_value = (num) => {
+    if(y_type === Y_TYPE_UNSELECTED){
+        return num.toFixed(2);
+    }
+    if(y_type === Y_TYPE_DECIMAL){
+        return num.toFixed(y_dec_digits);
+    }
+    if(y_type === Y_TYPE_SCIENTIFIC){
+        return num.toExponential(y_sci_digits-1).replace('+', '');
+    }
+}
+
 var set_y_value = (min, max) => {
-    document.getElementById('y-top-value').innerHTML = max.toFixed(2);
-    document.getElementById('y-bottom-value').innerHTML = min.toFixed(2);
+    // document.getElementById('y-top-value').innerHTML = max.toFixed(2);
+    // document.getElementById('y-bottom-value').innerHTML = min.toFixed(2);
+    document.getElementById('y-top-value').innerHTML = encode_value(max);
+    document.getElementById('y-bottom-value').innerHTML = encode_value(min);
     var interval = calc_y_interval(min, max);
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
@@ -94,10 +111,13 @@ var set_y_value = (min, max) => {
         scale_element.classList.add('y-js');
         scale_element.style.top = `${distance_to_top}vw`;
         value_element.style.top = `${distance_to_top + offset}vw`;
-        value_element.innerHTML = value.toFixed(2);
+        // value_element.innerHTML = value.toFixed(2);
+        value_element.innerHTML = encode_value(value);
         y_axis.appendChild(value_element);
         y_axis.appendChild(scale_element);
     }
+    y_range_prev_max = max;
+    y_range_prev_min = min;
 }
 
 function toScientificNotation(num) {
@@ -115,3 +135,40 @@ function toScientificNotation(num) {
     return [coeffNum, expNum];
 }
 
+var update_y_value = () => {
+    if(y_type === Y_TYPE_UNSELECTED){
+        return;
+    }
+    if(y_digits_input.value.length === 0){
+        return;
+    }
+    var digits = Number(y_digits_input.value);
+    if(Number.isNaN(digits)){
+        return;
+    }
+    digits = Math.round(digits);
+    if(y_type === Y_TYPE_SCIENTIFIC){
+        y_sci_digits = digits+1;
+    }
+    if(y_type === Y_TYPE_DECIMAL){
+        y_dec_digits = digits;
+    }
+    set_y_value(y_range_prev_min, y_range_prev_max);
+}
+
+var to_decimal = () =>{
+    y_type = Y_TYPE_DECIMAL;
+    update_y_value();
+}
+
+var to_scientific = () =>{
+    y_type = Y_TYPE_SCIENTIFIC;
+    update_y_value();
+}
+
+var y_digits_input = document.getElementById('y-digits');
+y_digits_input.addEventListener('input',()=>{
+    console.log('y_digits_input changed');
+    console.log(y_digits_input.value);
+    update_y_value();
+});

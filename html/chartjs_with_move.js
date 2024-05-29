@@ -9,7 +9,7 @@ var debug_element = document.getElementById('debug');
 var debug2_element = document.getElementById('debug2');
 
 // Generate sample data
-const totalDataPoints = 500000;
+const totalDataPoints = 20000000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
 const window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
@@ -48,6 +48,7 @@ var current_max = Number.MIN_VALUE;
 var current_min = Number.MAX_VALUE;
 var prev_y_max = null;
 var prev_y_min = null;
+var graph_locked = false;
 
 const numWorkers = 10;
 const workers = [];
@@ -352,6 +353,9 @@ function updateChart() {
 
 function handle_wheel(event) {
     event.preventDefault();
+    if (graph_locked) {
+        return;
+    }
     var y = event.deltaY;
     var x = event.deltaX;
     var action = -1;
@@ -474,4 +478,15 @@ lock_y_checkbox.addEventListener('change', () => {
         fix_y_mask_element.style.display = 'none';
     }
     // updateChart();
+});
+
+var lock_graph_checkbox = document.getElementById('lock-graph');
+lock_graph_checkbox.addEventListener('change', () => {
+    if (lock_graph_checkbox.checked) {
+        graph_locked = true;
+        chart_element.classList.add('locked');
+    } else {
+        graph_locked = false;
+        chart_element.classList.remove('locked');
+    }
 });

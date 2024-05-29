@@ -31,7 +31,15 @@
         <div id="options">
             <label id="fix-y-wrapper">
                 <input type="checkbox" id="fix-y">
-                <p id="fix-y-text">Fix Y range</p>
+                <p id="fix-y-text">Fix Y range (Global)</p>
+            </label>
+            <div id="fix-y-mask"></div>
+            <button id="to-current" onclick="fit_current()" class="tmp">
+                Fit Y to current
+            </button>
+            <label id="lock-y-wrapper">
+                <input type="checkbox" id="lock-y">
+                <p id="lock-y-text">Lock Y range</p>
             </label>
         </div>
         <p id="fps">FPS: 0</p>

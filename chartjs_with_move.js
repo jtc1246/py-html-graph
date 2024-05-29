@@ -9,7 +9,7 @@ var debug_element = document.getElementById('debug');
 var debug2_element = document.getElementById('debug2');
 
 // Generate sample data
-const totalDataPoints = 5000000;
+const totalDataPoints = 500000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
 const window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
@@ -41,7 +41,9 @@ document.querySelector('html').style.display = 'none';
 var data;
 var global_max = Number.MIN_VALUE;
 var global_min = Number.MAX_VALUE;
-var fix_y = false;
+var fix_y = false; // 固定为 global 的范围
+var fit_y_current = false; // 每次之前设为 true, 结束之后就设为 false
+var lock_y = false; // 这个为 true 的情况下, fix_y 应设成 false, 并把另两个按钮锁定
 var current_max = Number.MIN_VALUE;
 var current_min = Number.MAX_VALUE;
 var prev_y_max = null;
@@ -96,6 +98,15 @@ var update_range = () => {
        每次更新, 把 max 上调 1/3, min 下调 1/3
        如果 max大于global_max 或 min小于global_min, 就使用 global_max 或 global_min
      */
+    if(lock_y){
+        return;
+    }
+    if(fit_y_current){
+        diff = current_max - current_min;
+        prev_y_max = current_max + diff * 0.02;
+        prev_y_min = current_min - diff * 0.02;
+        return;
+    }
     if (prev_y_max === null || prev_y_min === null) {
         var diff = current_max - current_min;
         prev_y_max = current_max + diff / 3;
@@ -286,7 +297,7 @@ function createChart() {
                     display: false
                 },
                 y: {
-                    // display: false,
+                    display: false,
                     // 设置 y
                     min: get_y_min(),
                     max: get_y_max()
@@ -297,6 +308,7 @@ function createChart() {
             }
         }
     };
+    fit_y_current = false;
     return new Chart(ctx, config);
 }
 
@@ -406,11 +418,54 @@ function getMousePosition() {
 }
 
 var fix_y_checkbox = document.getElementById('fix-y');
+var fix_y_wrapper = document.getElementById('fix-y-wrapper');
+var fix_y_mask_element = document.getElementById('fix-y-mask');
 fix_y_checkbox.addEventListener('change', () => {
+    if(lock_y){
+        if(fix_y_checkbox.checked){
+            fix_y_checkbox.checked = false;
+        }
+        return;
+    }
     if (fix_y_checkbox.checked) {
+        fit_y_element.classList.add('invalid');
         fix_y = true;
     } else {
+        fit_y_element.classList.remove('invalid');
         fix_y = false;
     }
     updateChart();
+});
+
+var fit_y_element = document.getElementById('to-current');
+var fit_current = () => {
+    if (lock_y || fix_y) {
+        return;
+    }
+    fit_y_current = true;
+    updateChart();
+};
+
+var lock_y_checkbox = document.getElementById('lock-y');
+lock_y_checkbox.addEventListener('change', () => {
+    if (lock_y_checkbox.checked) {
+        if(fix_y){
+            prev_y_max = global_max;
+            prev_y_min = global_min;
+        }
+        lock_y = true;
+        fix_y_checkbox.checked = false;
+        fix_y = false;
+        fit_y_element.classList.add('invalid');
+        fix_y_wrapper.classList.add('invalid');
+        fix_y_checkbox.classList.add('invalid');
+        fix_y_mask_element.style.display = 'block';
+    } else {
+        lock_y = false;
+        fit_y_element.classList.remove('invalid');
+        fix_y_wrapper.classList.remove('invalid');
+        fix_y_checkbox.classList.remove('invalid');
+        fix_y_mask_element.style.display = 'none';
+    }
+    // updateChart();
 });

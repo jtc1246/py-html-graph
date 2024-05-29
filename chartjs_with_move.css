@@ -137,8 +137,8 @@
 }
 
 #fix-y-text {
-    padding-left: 1.5vw;
-    font-size: 1.5vw;
+    padding-left: 0.3vw;
+    font-size: 1.25vw;
     overflow:visible;
     user-select: none;
     -webkit-user-select: none;
@@ -146,6 +146,101 @@
     -ms-user-select: none;
 }
 
+#fix-y-mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 2.5vw;
+    width: 15vw;
+    border-radius: 0.75vw;
+    background-color: rgba(1, 1, 1, 0.25);
+    display: none;
+    cursor: not-allowed;
+}
+
+#fix-y-wrapper.invalid {
+
+}
+
+#fix-y-wrapper.invalid:hover {
+    cursor: not-allowed;
+}
+
+#fix-y.invalid:hover {
+    cursor: not-allowed;
+    /* pointer-events: none; */
+}
+
+#to-current {
+    position: absolute;
+    top: 0;
+    left: 16vw;
+    height: 2.5vw;
+    width: 12vw;
+    font-size: 1.25vw;
+    background-color: #0037fe;
+    color: #fff;
+    border-radius: 0.75vw;
+    text-align: center;
+}
+
+#to-current.invalid {
+    background-color: #5076ff;
+}
+
+#to-current.invalid:hover {
+    cursor: not-allowed;
+    background-color: #5076ff;
+}
+
+#to-current:hover {
+    cursor: pointer;
+    background-color: #2252ff;
+}
+
+#to-current:active {
+    background-color: #3c65f9;
+}
+
+#lock-y-wrapper {
+    position: absolute;
+    left: 29vw;
+    top: 0;
+    height: 2.5vw;
+    width: 12vw;
+    /* background-color: yellow; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+}
+
+#lock-y-wrapper:hover {
+    cursor: pointer;
+}
+
+#lock-y:hover {
+    cursor: pointer;
+}
+
+#lock-y {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+#lock-y-text {
+    padding-left: 0.3vw;
+    font-size: 1.25vw;
+    overflow:visible;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
 
 /* 6. For thr general page */
 html {

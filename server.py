@@ -24,7 +24,7 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Pragma', 'no-cache')
             self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
             self.end_headers()
-            with open('data_worker.js', 'rb') as f:
+            with open('./html/data_worker.js', 'rb') as f:
                 self.wfile.write(f.read())
             return
         self.send_response(200)
@@ -32,15 +32,15 @@ class Request(BaseHTTPRequestHandler):
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
         self.send_header('Content-Type', 'text/html; charset=utf-8')
-        with open('chartjs_with_move.html', 'r') as f:
+        with open('./html/chartjs_with_move.html', 'r') as f:
             html = f.read()
-        with open('chart.js', 'r') as f:
+        with open('./html/chart.js', 'r') as f:
             chartjs = f.read()
-        with open('chartjs_with_move.js', 'r') as f:
+        with open('./html/chartjs_with_move.js', 'r') as f:
             js = f.read()
-        with open('reset.css', 'r') as f:
+        with open('./html/reset.css', 'r') as f:
             reset = f.read()
-        with open('chartjs_with_move.css', 'r') as f:
+        with open('./html/chartjs_with_move.css', 'r') as f:
             css = f.read()
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
         html = html.replace('<script src="chartjs_with_move.js"></script>', f'<script>{js}</script>')

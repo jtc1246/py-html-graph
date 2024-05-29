@@ -42,10 +42,16 @@ class Request(BaseHTTPRequestHandler):
             reset = f.read()
         with open('./html/chartjs_with_move.css', 'r') as f:
             css = f.read()
+        with open('./html/style.js', 'r') as f:
+            stylejs = f.read()
+        with open('./html/axis.js', 'r') as f:
+            axisjs = f.read()
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
         html = html.replace('<script src="chartjs_with_move.js"></script>', f'<script>{js}</script>')
         html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
         html = html.replace('<link rel="stylesheet" href="chartjs_with_move.css">', f'<style>{css}</style>')
+        html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
+        html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
         self.end_headers()
         self.wfile.write(html.encode('utf-8'))
         print('index.html')

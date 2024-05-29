@@ -36,7 +36,7 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
-document.querySelector('html').style.display = 'none';
+document.querySelector('body').style.display = 'none';
 
 var data;
 var global_max = Number.MIN_VALUE;
@@ -157,10 +157,10 @@ createData().then((dataSets) => {
         }))
     };
     find_global_min_max(data.datasets);
-    console.log(`Global max: ${global_max}, Global min: ${global_min}`);
+    // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     all_finished = true;
     console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
-    document.querySelector('html').style.display = 'block';
+    document.querySelector('body').style.display = 'block';
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
     window.addEventListener('resize', updateChart);
@@ -309,6 +309,12 @@ function createChart() {
         }
     };
     fit_y_current = false;
+    var chart_y_min = config.options.scales.y.min;
+    var chart_y_max = config.options.scales.y.max;
+    // console.log(`Current max: ${current_max}, Current min: ${current_min}`);
+    // document.getElementById('y-top-value').innerHTML = chart_y_max.toFixed(2);
+    // document.getElementById('y-bottom-value').innerHTML = chart_y_min.toFixed(2);
+    set_y_value(chart_y_min, chart_y_max);
     return new Chart(ctx, config);
 }
 

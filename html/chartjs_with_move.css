@@ -3,6 +3,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+    background-color: #fff;
 }
 
 #main {
@@ -31,9 +32,9 @@
 
 /* 2. For the title */
 #title {
+    /* line-height 通过 js 设置, 不要 hardcode, 否则外面修改了太麻烦 */
     grid-area: 1 / 2 / 2 / 3;
     font-size: 2vw;
-    line-height: 3.5vw;  /* 计算得出的，如果 grid 高度或title占比发生改变，这里需要修改 */
     text-align: center;
     width: 100%;
     height: 100%;
@@ -55,6 +56,43 @@
     width: 100%;
     height: 100%;
     position: relative;
+    overflow: visible;
+}
+
+.y-scale {
+    position: absolute;
+    width: 0.5vw;
+    background-color: #282828;
+    left: calc(100% - 0.5vw);
+    height: 0.1vw;
+}
+
+#y-top-scale {
+    top: 0;
+}
+
+#y-bottom-scale {
+    top: calc(100%);
+}
+
+.y-value {
+    position: absolute;
+    font-size: 0.6vw;
+    line-height: 0.8vw;
+    height: 0.8vw;
+    /* background-color: yellow; */
+    width: 100vw;
+    left: calc(100% - 100.15vw);
+    text-align: right;
+    /* overflow: visible; */
+}
+
+#y-top-value {
+    top: 0.1vw;
+}
+
+#y-bottom-value {
+    top: calc(100% - 0.75vw);
 }
 
 #x-line {
@@ -156,10 +194,6 @@
     background-color: rgba(1, 1, 1, 0.25);
     display: none;
     cursor: not-allowed;
-}
-
-#fix-y-wrapper.invalid {
-
 }
 
 #fix-y-wrapper.invalid:hover {

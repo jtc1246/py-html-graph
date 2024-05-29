@@ -36,7 +36,16 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
+document.querySelector('html').style.display = 'none';
+
 var data;
+var global_max = Number.MIN_VALUE;
+var global_min = Number.MAX_VALUE;
+var fix_y = false;
+var current_max = Number.MIN_VALUE;
+var current_min = Number.MAX_VALUE;
+var prev_y_max = null;
+var prev_y_min = null;
 
 const numWorkers = 10;
 const workers = [];
@@ -70,6 +79,71 @@ function createData() {
     });
 }
 
+var find_global_min_max = (data) => {
+    // console.log(data.length);
+    for (var i = 0; i < data.length; i++) {
+        var current = data[i].data;
+        var l= current.length;
+        // console.log(`l: ${l}`);
+        for (var j = 0; j < l; j++) {
+            if (current[j] > global_max) {
+                global_max = current[j];
+            }
+            if (current[j] < global_min) {
+                global_min = current[j];
+            }
+        }
+    }
+};
+
+var update_range = () => {
+    /* 如果在之前的范围内, 且差小于之前差的 40%, 就不更新
+       每次更新, 把 max 上调 1/3, min 下调 1/3
+       如果 max大于global_max 或 min小于global_min, 就使用 global_max 或 global_min
+     */
+    if(prev_y_max===null || prev_y_min===null){
+        var diff = current_max - current_min;
+        prev_y_max = current_max + diff / 3;
+        prev_y_min = current_min - diff / 3;
+        if(prev_y_max>global_max){
+            prev_y_max = global_max;
+        }
+        if(prev_y_min<global_min){
+            prev_y_min = global_min;
+        }
+        return;
+    }
+    if(current_min>=prev_y_min && current_max<=prev_y_max && (current_max-current_min)>=0.4*(prev_y_max-prev_y_min)){
+        return;
+    }
+    var diff = current_max - current_min;
+    prev_y_max = current_max + diff / 3;
+    prev_y_min = current_min - diff / 3;
+    if(prev_y_max>global_max){
+        prev_y_max = global_max;
+    }
+    if(prev_y_min<global_min){
+        prev_y_min = global_min;
+    }
+};
+
+var get_y_min = () => {
+    if(fix_y){
+        return global_min;
+    }
+    update_range();
+    // console.log(`current_min: ${current_min}`);
+    return prev_y_min;
+}
+
+var get_y_max = () => {
+    if(fix_y){
+        return global_max;
+    }
+    // console.log(`current_max: ${current_max}`);
+    return prev_y_max;
+}
+
 createData().then((dataSets) => {
     data = {
         labels: Array.from({ length: totalDataPoints }, (_, i) => i),
@@ -78,8 +152,11 @@ createData().then((dataSets) => {
             data: data
         }))
     };
+    find_global_min_max(data.datasets);
+    console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     all_finished = true;
     console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
+    document.querySelector('html').style.display = 'block';
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
     window.addEventListener('resize', updateChart);
@@ -89,7 +166,7 @@ let myChart;
 var fps_datas = [];
 var last_update_time = 0;
 
-function slice(arr, start, end_plus_one, step) {
+function slice_no_min_max(arr, start, end_plus_one, step) {
     var result = [];
     var origin_end_plus_one = end_plus_one;
     if (end_plus_one > arr.length) {
@@ -112,13 +189,60 @@ function slice(arr, start, end_plus_one, step) {
     return result;
 }
 
+function slice(arr, start, end_plus_one, step) {
+    var result = [];
+    var origin_end_plus_one = end_plus_one;
+    if (end_plus_one > arr.length) {
+        end_plus_one = arr.length;
+    }
+    if (start >= 0) {
+        result.push(arr[start]);
+        if(arr[start]>current_max){
+            current_max = arr[start];
+        }
+        if(arr[start]<current_min){
+            current_min = arr[start];
+        }
+    } else {
+        result.push(arr[0]);
+        if(arr[0]>current_max){
+            current_max = arr[0];
+        }
+        if(arr[0]<current_min){
+            current_min = arr[0];
+        }
+    }
+    for (var i = start + step; i < end_plus_one; i += step) {
+        result.push(arr[i]);
+        if(arr[i]>current_max){
+            current_max = arr[i];
+        }
+        if(arr[i]<current_min){
+            current_min = arr[i];
+        }
+    }
+    var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
+    // console.log(`ideal_length: ${ideal_length}, real_length: ${result.length}`);
+    if (result.length < ideal_length) {
+        // console.log('added last')
+        result.push(arr[arr.length - 1]);
+        if(arr[arr.length - 1]>current_max){
+            current_max = arr[arr.length - 1];
+        }
+        if(arr[arr.length - 1]<current_min){
+            current_min = arr[arr.length - 1];
+        }
+    }
+    return result;
+}
+
 var fix_down_with_remainder = (num, multiple, remainder) => {
     var tmp = num % multiple;
     if (tmp >= remainder) {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp - multiple + remainder);
-}
+};
 
 var fix_up_with_remainder = (num, multiple, remainder) => {
     var tmp = num % multiple;
@@ -126,7 +250,7 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp + multiple + remainder);
-}
+};
 
 
 function createChart() {
@@ -141,11 +265,13 @@ function createChart() {
     var start = fix_down_with_remainder(currentIndex, step, remainder);
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     // console.log(`start: ${start}, end_plus_one: ${end_plus_one}`);
+    current_min = Number.MAX_VALUE;
+    current_max = Number.MIN_VALUE;
     const config = {
         type: 'line',
         data: {
             // labels: data.labels.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
-            labels: slice(data.labels, start, end_plus_one, step),
+            labels: slice_no_min_max(data.labels, start, end_plus_one, step),
             datasets: data.datasets.map(dataset => ({
                 ...dataset,
                 // data: dataset.data.slice(Math.floor(currentIndex), Math.floor(currentIndex + viewWindow+2)),
@@ -176,10 +302,10 @@ function createChart() {
                     display: false
                 },
                 y: {
-                    display: false,
+                    // display: false,
                     // 设置 y
-                    // min: 98,
-                    // max: 102
+                    min: get_y_min(),
+                    max: get_y_max()
                 }
             },
             interaction: {
@@ -310,3 +436,13 @@ function getMousePosition() {
     return xValue;
 }
 
+var fix_y_checkbox = document.getElementById('fix-y');
+fix_y_checkbox.addEventListener('change', ()=>{
+    if (fix_y_checkbox.checked) {
+        fix_y = true;
+    } else {
+        fix_y = false;
+    }
+    // console.log(`fix_y: ${fix_y}`);
+    updateChart();
+});

@@ -13,10 +13,10 @@
 
 #wrapper {
     width: 100%;
-    height: 35vw;
+    height: 40vw;
     display: grid;
-    grid-template-columns: 1fr 18.5fr 1.5fr;
-    grid-template-rows: 1fr 8fr 1fr;
+    grid-template-columns: 4.7619vw 88.0952vw 7.1429vw;
+    grid-template-rows: 2.5vw 1fr 3.5vw;
     justify-content: center;
     align-items: center;
     justify-items: center;
@@ -393,6 +393,46 @@
 
 #y-digits-text {
     padding-left: 0.4vw;
+}
+
+#x-relative-wrapper {
+    position: absolute;
+    left: 43vw;
+    top: 3.25vw;
+    height: 2.5vw;
+    width: 16vw;
+    /* background-color: yellow; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+}
+
+#x-relative-wrapper:hover {
+    cursor: pointer;
+}
+
+#x-relative:hover {
+    cursor: pointer;
+}
+
+#x-relative {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+#x-relative-text {
+    padding-left: 0.3vw;
+    font-size: 1.25vw;
+    overflow:visible;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 /* 6. For thr general page */

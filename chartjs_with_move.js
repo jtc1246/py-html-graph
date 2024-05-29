@@ -83,7 +83,7 @@ var find_global_min_max = (data) => {
     // console.log(data.length);
     for (var i = 0; i < data.length; i++) {
         var current = data[i].data;
-        var l= current.length;
+        var l = current.length;
         // console.log(`l: ${l}`);
         for (var j = 0; j < l; j++) {
             if (current[j] > global_max) {
@@ -101,34 +101,34 @@ var update_range = () => {
        每次更新, 把 max 上调 1/3, min 下调 1/3
        如果 max大于global_max 或 min小于global_min, 就使用 global_max 或 global_min
      */
-    if(prev_y_max===null || prev_y_min===null){
+    if (prev_y_max === null || prev_y_min === null) {
         var diff = current_max - current_min;
         prev_y_max = current_max + diff / 3;
         prev_y_min = current_min - diff / 3;
-        if(prev_y_max>global_max){
+        if (prev_y_max > global_max) {
             prev_y_max = global_max;
         }
-        if(prev_y_min<global_min){
+        if (prev_y_min < global_min) {
             prev_y_min = global_min;
         }
         return;
     }
-    if(current_min>=prev_y_min && current_max<=prev_y_max && (current_max-current_min)>=0.4*(prev_y_max-prev_y_min)){
+    if (current_min >= prev_y_min && current_max <= prev_y_max && (current_max - current_min) >= 0.4 * (prev_y_max - prev_y_min)) {
         return;
     }
     var diff = current_max - current_min;
     prev_y_max = current_max + diff / 3;
     prev_y_min = current_min - diff / 3;
-    if(prev_y_max>global_max){
+    if (prev_y_max > global_max) {
         prev_y_max = global_max;
     }
-    if(prev_y_min<global_min){
+    if (prev_y_min < global_min) {
         prev_y_min = global_min;
     }
 };
 
 var get_y_min = () => {
-    if(fix_y){
+    if (fix_y) {
         return global_min;
     }
     update_range();
@@ -137,7 +137,7 @@ var get_y_min = () => {
 }
 
 var get_y_max = () => {
-    if(fix_y){
+    if (fix_y) {
         return global_max;
     }
     // console.log(`current_max: ${current_max}`);
@@ -197,27 +197,27 @@ function slice(arr, start, end_plus_one, step) {
     }
     if (start >= 0) {
         result.push(arr[start]);
-        if(arr[start]>current_max){
+        if (arr[start] > current_max) {
             current_max = arr[start];
         }
-        if(arr[start]<current_min){
+        if (arr[start] < current_min) {
             current_min = arr[start];
         }
     } else {
         result.push(arr[0]);
-        if(arr[0]>current_max){
+        if (arr[0] > current_max) {
             current_max = arr[0];
         }
-        if(arr[0]<current_min){
+        if (arr[0] < current_min) {
             current_min = arr[0];
         }
     }
     for (var i = start + step; i < end_plus_one; i += step) {
         result.push(arr[i]);
-        if(arr[i]>current_max){
+        if (arr[i] > current_max) {
             current_max = arr[i];
         }
-        if(arr[i]<current_min){
+        if (arr[i] < current_min) {
             current_min = arr[i];
         }
     }
@@ -226,10 +226,10 @@ function slice(arr, start, end_plus_one, step) {
     if (result.length < ideal_length) {
         // console.log('added last')
         result.push(arr[arr.length - 1]);
-        if(arr[arr.length - 1]>current_max){
+        if (arr[arr.length - 1] > current_max) {
             current_max = arr[arr.length - 1];
         }
-        if(arr[arr.length - 1]<current_min){
+        if (arr[arr.length - 1] < current_min) {
             current_min = arr[arr.length - 1];
         }
     }
@@ -437,7 +437,7 @@ function getMousePosition() {
 }
 
 var fix_y_checkbox = document.getElementById('fix-y');
-fix_y_checkbox.addEventListener('change', ()=>{
+fix_y_checkbox.addEventListener('change', () => {
     if (fix_y_checkbox.checked) {
         fix_y = true;
     } else {

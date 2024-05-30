@@ -2,6 +2,8 @@ const ACTION_IGNORE = 10000001;
 const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;
 
+const BASE64_CODE = '$workerb64$';
+
 var t = 0;
 const chart_element = document.getElementById('myChart');
 const ctx = document.getElementById('myChart').getContext('2d');
@@ -61,7 +63,7 @@ var generating_start_time = performance.now();
 function createData() {
     return new Promise((resolve) => {
         for (let i = 0; i < numWorkers; i++) {
-            const worker = new Worker('data_worker.js');
+            const worker = new Worker('data:application/javascript;base64,'+BASE64_CODE);
             worker.onmessage = function (e) {
                 const { index, data } = e.data;
                 dataSets[index] = data;

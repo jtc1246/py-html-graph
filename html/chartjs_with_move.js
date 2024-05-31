@@ -45,7 +45,7 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('wheel', (event) => {
-    if(event.deltaY !== 0) {
+    if(event.deltaX !== 0) {
         is_touchpad = true;
     }
 });
@@ -182,7 +182,7 @@ var mouse_drag = (event) => {
     }
     event.preventDefault();
     prev_mouse_loc = tmp;
-    console.log(moved);
+    // console.log(moved);
     handle_x_drag(-moved);
 };
 
@@ -395,7 +395,7 @@ function updateChart() {
 
 
 function handle_wheel(event) {
-    if (event.deltaY !== 0) {
+    if (event.deltaX !== 0) {
         is_touchpad = true;
     }
     event.preventDefault();
@@ -404,6 +404,7 @@ function handle_wheel(event) {
     }
     var y = event.deltaY;
     var x = event.deltaX;
+    // console.log(`x: ${x}, y: ${y}`);
     var action = -1;
     if (y === 0) {
         action = ACTION_LEFTRIGHT;

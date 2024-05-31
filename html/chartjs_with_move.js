@@ -36,6 +36,19 @@ let currentIndex = 0;
 let level = 0; // 缩放级别，必须大于等于0，代表从 2^level 个数据点中选一个显示
 let ratio = 1.0;
 var mouseX = 0;
+var is_touchpad = false;
+var mouse_pressed = false;
+var prev_mouse_loc = -1;
+
+window.addEventListener('mouseup', () => {
+    mouse_pressed = false;
+});
+
+window.addEventListener('wheel', (event) => {
+    if(event.deltaY !== 0) {
+        is_touchpad = true;
+    }
+});
 
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
@@ -158,6 +171,21 @@ var get_y_max = () => {
     return prev_y_max;
 }
 
+var mouse_drag = (event) => {
+    if(is_touchpad || !mouse_pressed) {
+        return;
+    }
+    var tmp = event.clientX;
+    var moved = tmp - prev_mouse_loc;
+    if(moved === 0) {
+        return;
+    }
+    event.preventDefault();
+    prev_mouse_loc = tmp;
+    console.log(moved);
+    handle_x_drag(-moved);
+};
+
 createData().then((dataSets) => {
     data = {
         labels: Array.from({ length: totalDataPoints }, (_, i) => i),
@@ -174,6 +202,12 @@ createData().then((dataSets) => {
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
     window.addEventListener('resize', updateChart);
+    title_element.style.lineHeight = title_element.clientHeight + "px";
+    element.addEventListener('mousedown', (event) => {
+        mouse_pressed = true;
+        prev_mouse_loc = event.clientX;
+    });
+    element.addEventListener('mousemove', mouse_drag);
 });
 
 let myChart;
@@ -361,6 +395,9 @@ function updateChart() {
 
 
 function handle_wheel(event) {
+    if (event.deltaY !== 0) {
+        is_touchpad = true;
+    }
     event.preventDefault();
     if (graph_locked) {
         return;
@@ -384,6 +421,71 @@ function handle_wheel(event) {
     }
     if (action === ACTION_LEFTRIGHT) {
         currentIndex += x * fake_window_size / 1000;
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
+        }
+    }
+    if (action === ACTION_UPDOWN) {
+        ratio *= Math.pow(1.01, y);
+        var prev_fake_window_size = fake_window_size;
+        fake_window_size = origin_window_size * ratio;
+        if (fake_window_size < window_min) {
+            fake_window_size = window_min;
+            ratio = fake_window_size / origin_window_size;
+        }
+        if (fake_window_size > totalDataPoints - 1) {
+            fake_window_size = totalDataPoints - 1;
+            ratio = fake_window_size / origin_window_size;
+        }
+        var mouse_x = getMousePosition();
+        var left_ratio = (mouse_x - currentIndex) / prev_fake_window_size;
+        currentIndex = mouse_x - fake_window_size * left_ratio;
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
+        }
+        // 开始处理 level 和 viewWindow, 因为实际上前面只是计算范围, 
+        // 和实际渲染完全没关系, currentIndex 可以先计算好
+        level = 0;
+        viewWindow = fake_window_size;
+        while (viewWindow > window_max) {
+            viewWindow /= 2;
+            level++;
+        }
+    }
+    debug_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
+    updateChart();
+}
+
+function handle_x_drag(moved_x) {
+    // event.preventDefault();
+    if (graph_locked) {
+        return;
+    }
+    var y = 0;
+    var x = moved_x;
+    var action = -1;
+    if (y === 0) {
+        action = ACTION_LEFTRIGHT;
+    } else if (x === 0) {
+        action = ACTION_UPDOWN;
+    } else if (Math.abs(y) >= 3 * Math.abs(x)) {
+        action = ACTION_UPDOWN;
+    } else if (Math.abs(x) >= 3 * Math.abs(y)) {
+        action = ACTION_LEFTRIGHT;
+    } else {
+        action = ACTION_IGNORE;
+    }
+    if (action === ACTION_IGNORE) {
+        return;
+    }
+    if (action === ACTION_LEFTRIGHT) {
+        currentIndex += x * fake_window_size / chart_element.clientWidth;
         if (currentIndex < 0) {
             currentIndex = 0;
         }
@@ -466,7 +568,8 @@ var fit_current = () => {
 };
 
 var lock_y_checkbox = document.getElementById('lock-y');
-lock_y_checkbox.addEventListener('change', () => {
+
+var lock_y_change_callback = () => {
     if (lock_y_checkbox.checked) {
         if (fix_y) {
             prev_y_max = global_max;
@@ -487,7 +590,9 @@ lock_y_checkbox.addEventListener('change', () => {
         fix_y_mask_element.style.display = 'none';
     }
     // updateChart();
-});
+}
+
+lock_y_checkbox.addEventListener('change',lock_y_change_callback);
 
 var lock_graph_checkbox = document.getElementById('lock-graph');
 lock_graph_checkbox.addEventListener('change', () => {

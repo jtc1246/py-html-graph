@@ -843,7 +843,7 @@ html {
                 <div id="y-line"></div>
                 <div id="y-top-scale" class="y-scale"></div>
                 <div id="y-bottom-scale" class="y-scale"></div>
-                <p id="y-title">The description of Y.</p>
+                <p id="y-title">The description of Y.</p><br>
                 <p id="y-top-value" class="y-value y-value-fixed">test1</p>
                 <p id="y-bottom-value" class="y-value y-value-fixed">test2</p>
             </div>
@@ -1125,7 +1125,7 @@ y_digits_input.addEventListener('input',()=>{
 
 
 // ========================= Following is for X axis =========================
-const START_UNIX_MS = 0;
+const START_UNIX_MS = 1717186867000; // 2024-05-31 20:21:07 GMT+0
 const X_STEP_MS = 5000;
 const LEVEL_S = [
     1, 2, 3, 5, 10, 15, 20, 30,
@@ -1136,6 +1136,12 @@ const LEVEL_S = [
     86400*365*2, 86400*(365*3+1), 86400*(365*5+1), 86400*(365*10+2)
 ];
 const IDEAL_INTERVAL_NUM = 9;
+const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+var latest_x_interval_for_encoding_only = 0;
+
+var show_x_week = false;
+var x_relative = false;
 
 var get_chart_width_in_vw = () => {
     var chart = document.getElementById("myChart");
@@ -1177,6 +1183,9 @@ var delete_x_values_scales = () => {
 
 var encode_unix_ms = (num) => {
     num = Math.round(num/1000)*1000;
+    // if(x_relative){
+    //     num = num - START_UNIX_MS;
+    // }
     var date = new Date(num);
     const year = date.getUTCFullYear();     // 获取年份
     const month = date.getUTCMonth() + 1;   // 获取月份，getUTCMonth()返回的是0-11，所以需要+1
@@ -1184,17 +1193,42 @@ var encode_unix_ms = (num) => {
     const hours = date.getUTCHours();       // 获取小时
     const minutes = date.getUTCMinutes();   // 获取分钟
     const seconds = date.getUTCSeconds();   // 获取秒
-    var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    var line1 = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    var line2 = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    if(x_relative){
+        line1 = Math.floor(num/1000/86400)+'d';
+    }
+    // var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    var time_str = '';
+    if(latest_x_interval_for_encoding_only <= 6*3600){
+        time_str = line2 + '&nbsp;<br class="no-select">' + line1;
+    } else {
+        time_str = line1 + '&nbsp;<br class="no-select">' + line2;
+    }
+    if(x_relative){
+        date = new Date(num+START_UNIX_MS);
+    }
+    const week = WEEK_DAYS[date.getUTCDay()];
+    if(show_x_week){
+        time_str += `&nbsp;<br class="no-select">${week}`;
+    }
     return time_str;
 };
 
 var set_x_value = () =>{
     var min = currentIndex * X_STEP_MS + START_UNIX_MS;
     var max = (currentIndex+fake_window_size) * X_STEP_MS + START_UNIX_MS;
-    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
-    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
+    if(x_relative){
+        min -= START_UNIX_MS;
+        max -= START_UNIX_MS;
+    }
+    // document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
+    // document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
     var diff = max - min;
     var interval = find_interval(diff)*1000;
+    latest_x_interval_for_encoding_only = Math.round(interval/1000);
+    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
+    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
     console.log(`interval: ${interval}`);
     // var start = Math.floor(min / interval) * interval;
     // var end = Math.ceil(max / interval) * interval;
@@ -1233,7 +1267,27 @@ var set_x_value = () =>{
         x_axis.appendChild(scale_element);
     }
     x_axis.appendChild(right_value);
-};</script>
+};
+
+var show_x_week_checkbox = document.getElementById('x-week');
+show_x_week_checkbox.addEventListener('change',()=>{
+    if(show_x_week_checkbox.checked){
+        show_x_week = true;
+    } else {
+        show_x_week = false;
+    }
+    set_x_value();
+});
+
+var x_relative_checkbox = document.getElementById('x-relative');
+x_relative_checkbox.addEventListener('change',()=>{
+    if(x_relative_checkbox.checked){
+        x_relative = true;
+    } else {
+        x_relative = false;
+    }
+    set_x_value();
+});</script>
     <script>const ACTION_IGNORE = 10000001;
 const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;

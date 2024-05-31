@@ -77,8 +77,9 @@ var encode_value = (num) => {
 var set_y_value = (min, max) => {
     // document.getElementById('y-top-value').innerHTML = max.toFixed(2);
     // document.getElementById('y-bottom-value').innerHTML = min.toFixed(2);
-    document.getElementById('y-top-value').innerHTML = encode_value(max);
-    document.getElementById('y-bottom-value').innerHTML = encode_value(min);
+    // or it will be completely continuous, no space
+    document.getElementById('y-top-value').innerHTML = encode_value(max)+'<br>';
+    document.getElementById('y-bottom-value').innerHTML = encode_value(min)+'<br>';
     var interval = calc_y_interval(min, max);
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
@@ -98,7 +99,10 @@ var set_y_value = (min, max) => {
     } else {
         offset = 0.1
     }
-    for (var i = start; i <= end; i++) {
+    var bottom_value = document.getElementById('y-bottom-value'); // must put it at last
+    y_axis.removeChild(bottom_value);
+    for (var i = end; i >= start; i--) {
+        // for selection order, use reverse order
         var value = i * interval;
         var distance_to_top = (max - value) / (max - min) * height_in_vw;
         // 刻度线的距离是多少就是多少
@@ -112,10 +116,11 @@ var set_y_value = (min, max) => {
         scale_element.style.top = `${distance_to_top}vw`;
         value_element.style.top = `${distance_to_top + offset}vw`;
         // value_element.innerHTML = value.toFixed(2);
-        value_element.innerHTML = encode_value(value);
+        value_element.innerHTML = encode_value(value)+'<br>';
         y_axis.appendChild(value_element);
         y_axis.appendChild(scale_element);
     }
+    y_axis.appendChild(bottom_value);
     y_range_prev_max = max;
     y_range_prev_min = min;
 }

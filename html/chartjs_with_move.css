@@ -627,6 +627,7 @@ html {
     border-radius: 0.5vw;
     color: #fff;
     text-align: center;
+    user-select: none;
 }
 
 #reverse-mouse:hover {

@@ -464,7 +464,7 @@
     color: #989898;
 }
 
-#y-value-text.y-value-text {
+#y-value-text.y-range-text {
     padding-right: 0;
     padding-right: 0.5vw;
 }
@@ -488,7 +488,7 @@
     background-color: #46ac7d;
 }
 
-#x-relative-wrapper.x-relative-wrapper {
+#x-relative-wrapper.x-week-wrapper {
     left: 60vw;
 }
 
@@ -504,7 +504,7 @@
     margin: 0;
 }
 
-#x-relative-wrapper.x-relative-wrapper-2 {
+#x-relative-wrapper.debug-mode-wrapper {
     left: 77vw;
     width: 12vw;
 }

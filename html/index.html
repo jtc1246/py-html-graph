@@ -54,7 +54,7 @@
     flex-grow: 0;
     flex-shrink: 0;
     flex-flow: nowrap;
-    vertical-align: baseline;
+    vertical-align: top;
     caret-color: #000;
 }
 
@@ -559,8 +559,41 @@ html {
 
 /* 7. Debug information */
 #fps {
+    /* padding-top: 1vw; */
+    /* padding-left: 2vw; */
+    display: inline-block;
+    line-height: 2vw;
+    height: 100%;
+    width: 13.5vw;
+}
+
+#reverse-mouse {
+    display: inline;
+    height: 100%;
+    line-height: 2vw;
+    margin-left: 0vw;
+    font-size: 1.25vw;
+    background-color: #aaa;
+    width: 15vw;
+    border-radius: 0.5vw;
+    color: #fff;
+    text-align: center;
+}
+
+#reverse-mouse:hover {
+    cursor: pointer;
+    background-color: #bbb;
+}
+
+#reverse-mouse:active {
+    background-color: #ccc;
+}
+
+#debug-info {
     padding-top: 1vw;
     padding-left: 2vw;
+    height: 2vw;
+    box-sizing: content-box;
 }
 
 #debug {
@@ -649,7 +682,10 @@ html {
                 <p id="x-relative-text">Use relative time in X</p>
             </label>
         </div>
-        <p id="fps">FPS: 0</p>
+        <div id="debug-info">
+            <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button>
+            <!-- <p id="reverse-mouse">Reverse mouse wheel direction</p> -->
+        </div>
         <div id="debug-container">
             <p id="debug">Test</p>
             <p id="debug2">Test</p>
@@ -660,7 +696,15 @@ title_element.style.lineHeight = title_element.clientHeight + "px";
 
 window.addEventListener("resize", () => {
     title_element.style.lineHeight = title_element.clientHeight + "px";
-});</script>
+});
+
+var force_update = () => {
+    title_element.style.lineHeight = title_element.clientHeight + "px";
+    setTimeout(force_update, 10);
+}
+
+// force_update();
+</script>
     <script>/* 计划 (y坐标值):
    1. 在网页中加入选择和输入框, 可以选择科学记数法或小数, 并输入有效数字位数
    2. 但是暂时先不实现这个, 先按照最简单的实现, 证明可行性
@@ -874,6 +918,20 @@ let currentIndex = 0;
 let level = 0; // 缩放级别，必须大于等于0，代表从 2^level 个数据点中选一个显示
 let ratio = 1.0;
 var mouseX = 0;
+var is_touchpad = false;
+var mouse_pressed = false;
+var prev_mouse_loc = -1;
+var reverse_mouse_direction = false;
+
+window.addEventListener('mouseup', () => {
+    mouse_pressed = false;
+});
+
+window.addEventListener('wheel', (event) => {
+    if(event.deltaX !== 0) {
+        is_touchpad = true;
+    }
+});
 
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
@@ -996,6 +1054,21 @@ var get_y_max = () => {
     return prev_y_max;
 }
 
+var mouse_drag = (event) => {
+    if(is_touchpad || !mouse_pressed) {
+        return;
+    }
+    var tmp = event.clientX;
+    var moved = tmp - prev_mouse_loc;
+    if(moved === 0) {
+        return;
+    }
+    event.preventDefault();
+    prev_mouse_loc = tmp;
+    // console.log(moved);
+    handle_x_drag(-moved);
+};
+
 createData().then((dataSets) => {
     data = {
         labels: Array.from({ length: totalDataPoints }, (_, i) => i),
@@ -1012,6 +1085,12 @@ createData().then((dataSets) => {
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
     window.addEventListener('resize', updateChart);
+    title_element.style.lineHeight = title_element.clientHeight + "px";
+    element.addEventListener('mousedown', (event) => {
+        mouse_pressed = true;
+        prev_mouse_loc = event.clientX;
+    });
+    element.addEventListener('mousemove', mouse_drag);
 });
 
 let myChart;
@@ -1199,12 +1278,29 @@ function updateChart() {
 
 
 function handle_wheel(event) {
+    // console.log(event.deltaMode);
+    // console.log(event.deltaY);
+    // console.log(event.wheelDeltaY);
+    // console.log(`deltaY: ${event.deltaY}, wheelDeltaY: ${event.wheelDeltaY}`)
+    if (event.deltaX !== 0) {
+        is_touchpad = true;
+    }
     event.preventDefault();
     if (graph_locked) {
         return;
     }
     var y = event.deltaY;
     var x = event.deltaX;
+    // Currently will not implement this (distinguish whether it is mouse or trackpad, reverse
+    // the direction if it is mouse), the following method works on mac, but not works on linux.
+    // var tmptmp = Math.abs(y) % 1;
+    // if(tmptmp >0.0001 && tmptmp < 0.9999) {
+    //     y = -y;
+    // }
+    // console.log(`x: ${x}, y: ${y}`);
+    if (reverse_mouse_direction) {
+        y = -y;
+    }
     var action = -1;
     if (y === 0) {
         action = ACTION_LEFTRIGHT;
@@ -1222,6 +1318,71 @@ function handle_wheel(event) {
     }
     if (action === ACTION_LEFTRIGHT) {
         currentIndex += x * fake_window_size / 1000;
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
+        }
+    }
+    if (action === ACTION_UPDOWN) {
+        ratio *= Math.pow(1.01, y);
+        var prev_fake_window_size = fake_window_size;
+        fake_window_size = origin_window_size * ratio;
+        if (fake_window_size < window_min) {
+            fake_window_size = window_min;
+            ratio = fake_window_size / origin_window_size;
+        }
+        if (fake_window_size > totalDataPoints - 1) {
+            fake_window_size = totalDataPoints - 1;
+            ratio = fake_window_size / origin_window_size;
+        }
+        var mouse_x = getMousePosition();
+        var left_ratio = (mouse_x - currentIndex) / prev_fake_window_size;
+        currentIndex = mouse_x - fake_window_size * left_ratio;
+        if (currentIndex < 0) {
+            currentIndex = 0;
+        }
+        if (currentIndex > totalDataPoints - fake_window_size - 1) {
+            currentIndex = totalDataPoints - fake_window_size - 1;
+        }
+        // 开始处理 level 和 viewWindow, 因为实际上前面只是计算范围, 
+        // 和实际渲染完全没关系, currentIndex 可以先计算好
+        level = 0;
+        viewWindow = fake_window_size;
+        while (viewWindow > window_max) {
+            viewWindow /= 2;
+            level++;
+        }
+    }
+    debug_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
+    updateChart();
+}
+
+function handle_x_drag(moved_x) {
+    // event.preventDefault();
+    if (graph_locked) {
+        return;
+    }
+    var y = 0;
+    var x = moved_x;
+    var action = -1;
+    if (y === 0) {
+        action = ACTION_LEFTRIGHT;
+    } else if (x === 0) {
+        action = ACTION_UPDOWN;
+    } else if (Math.abs(y) >= 3 * Math.abs(x)) {
+        action = ACTION_UPDOWN;
+    } else if (Math.abs(x) >= 3 * Math.abs(y)) {
+        action = ACTION_LEFTRIGHT;
+    } else {
+        action = ACTION_IGNORE;
+    }
+    if (action === ACTION_IGNORE) {
+        return;
+    }
+    if (action === ACTION_LEFTRIGHT) {
+        currentIndex += x * fake_window_size / chart_element.clientWidth;
         if (currentIndex < 0) {
             currentIndex = 0;
         }
@@ -1304,7 +1465,8 @@ var fit_current = () => {
 };
 
 var lock_y_checkbox = document.getElementById('lock-y');
-lock_y_checkbox.addEventListener('change', () => {
+
+var lock_y_change_callback = () => {
     if (lock_y_checkbox.checked) {
         if (fix_y) {
             prev_y_max = global_max;
@@ -1325,7 +1487,9 @@ lock_y_checkbox.addEventListener('change', () => {
         fix_y_mask_element.style.display = 'none';
     }
     // updateChart();
-});
+}
+
+lock_y_checkbox.addEventListener('change',lock_y_change_callback);
 
 var lock_graph_checkbox = document.getElementById('lock-graph');
 lock_graph_checkbox.addEventListener('change', () => {
@@ -1336,7 +1500,19 @@ lock_graph_checkbox.addEventListener('change', () => {
         graph_locked = false;
         chart_element.classList.remove('locked');
     }
-});</script>
+});
+
+var reverse_mouse_element = document.getElementById('reverse-mouse');
+var reverse_mouse = () => {
+    if(reverse_mouse_direction) {
+        reverse_mouse_direction = false;
+        reverse_mouse_element.innerHTML = "Reverse mouse wheel";
+    } else {
+        reverse_mouse_direction = true;
+        reverse_mouse_element.innerHTML = "Unreverse mouse wheel";
+    }
+}
+</script>
 </body>
 
 </html>

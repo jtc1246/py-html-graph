@@ -69,6 +69,22 @@
                 <input type="checkbox" id="x-relative">
                 <p id="x-relative-text">Use relative time in X</p>
             </label>
+            <div id="y-range">
+                <p id="y-value-text" class="y-value-text">Y range:</p>
+                <p id="y-digits-text">from</p>
+                <input type="text" id="y-range-1" placeholder="0">
+                <p id="y-digits-text">to</p>
+                <input type="text" id="y-range-2" placeholder="0">
+                <button id="y-range-ok" onclick="set_y_range()">OK</button>
+            </div>
+            <label id="x-relative-wrapper" class="x-relative-wrapper">
+                <input type="checkbox" id="x-week">
+                <p id="x-relative-text">Show week day in X</p>
+            </label>
+            <label id="x-relative-wrapper" class="x-relative-wrapper-2">
+                <input type="checkbox" id="debug-mode">
+                <p id="x-relative-text">Debug mode</p>
+            </label>
         </div>
         <div id="debug-info">
             <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button>

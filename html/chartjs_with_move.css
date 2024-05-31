@@ -435,6 +435,92 @@
     -ms-user-select: none;
 }
 
+#y-range {
+    display: flex;
+    position: absolute;
+    height: 2.5vw;
+    width: 24vw;
+    top: 0vw;
+    left: 42vw;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+    align-items: center;
+    justify-content: center;
+}
+
+#y-range-1, #y-range-2 {
+    font-size: 1.125vw;
+    height: 1.75vw;
+    border: 0.15vw solid #ff0000;
+    border-radius: 0.5vw;
+    padding-left: 0.3vw;
+    padding-right: 0.3vw;
+    width: 4vw;
+    margin-left: 0.3vw;
+    text-align: center;
+}
+
+#y-range-1::placeholder, #y-range-2::placeholder {
+    color: #989898;
+}
+
+#y-value-text.y-value-text {
+    padding-right: 0;
+    padding-right: 0.5vw;
+}
+
+#y-range-ok {
+    font-size: 1.25vw;
+    background-color: #198754;
+    color: #fff;
+    height: 1.75vw;
+    margin-left: 1vw;
+    width: 3vw;
+    border-radius: 0.5vw;
+}
+
+#y-range-ok:hover {
+    cursor: pointer;
+    background-color: #289663;
+}
+
+#y-range-ok:active {
+    background-color: #46ac7d;
+}
+
+#x-relative-wrapper.x-relative-wrapper {
+    left: 60vw;
+}
+
+#x-week:hover {
+    cursor: pointer;
+}
+
+#x-week {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+#x-relative-wrapper.x-relative-wrapper-2 {
+    left: 77vw;
+    width: 12vw;
+}
+
+#debug-mode:hover {
+    cursor: pointer;
+}
+
+#debug-mode {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
 /* 6. For thr general page */
 html {
     background-color: #eee;
@@ -442,6 +528,7 @@ html {
 
 * {
     color: #282828;
+    caret-color: #3478F6;
 }
 
 

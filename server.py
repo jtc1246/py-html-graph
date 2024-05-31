@@ -46,6 +46,8 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
             self.send_header('Pragma', 'no-cache')
             self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
+            self.send_header('Content-Length', 13)
+            self.send_header('Connection', 'keep-alive')
             self.end_headers()
             self.wfile.write(b'404 Not Found')
             return
@@ -65,6 +67,7 @@ class Request(BaseHTTPRequestHandler):
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
         self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Connection', 'keep-alive')
         with open('./html/chartjs_with_move.html', 'r') as f:
             html = f.read()
         with open('./html/chart.js', 'r') as f:
@@ -89,8 +92,10 @@ class Request(BaseHTTPRequestHandler):
         html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
         html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
         html = html.replace("'$workerb64$'", f"'{worker}'")
+        html = html.encode('utf-8')
+        self.send_header('Content-Length', len(html))
         self.end_headers()
-        self.wfile.write(html.encode('utf-8'))
+        self.wfile.write(html)
         print('index.html')
         return
 

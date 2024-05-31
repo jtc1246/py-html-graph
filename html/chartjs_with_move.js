@@ -49,7 +49,7 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('wheel', (event) => {
-    if(event.deltaX !== 0) {
+    if (event.deltaX !== 0) {
         is_touchpad = true;
     }
 });
@@ -177,12 +177,12 @@ var get_y_max = () => {
 }
 
 var mouse_drag = (event) => {
-    if(is_touchpad || !mouse_pressed) {
+    if (is_touchpad || !mouse_pressed) {
         return;
     }
     var tmp = event.clientX;
     var moved = tmp - prev_mouse_loc;
-    if(moved === 0) {
+    if (moved === 0) {
         return;
     }
     event.preventDefault();
@@ -315,7 +315,7 @@ function createChart() {
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     current_min = Number.MAX_VALUE;
     current_max = Number.MIN_VALUE;
-    if(latest_line_width === 0){
+    if (latest_line_width === 0) {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
     const config = {
@@ -625,17 +625,17 @@ var fit_current = () => {
 
 var set_y_low = document.getElementById('y-range-1');
 var set_y_high = document.getElementById('y-range-2');
-var set_y_range = () =>{
+var set_y_range = () => {
     var low = parseFloat(set_y_low.value);
     var high = parseFloat(set_y_high.value);
-    if(Number.isNaN(low) || Number.isNaN(high) || low >= high) {
+    if (Number.isNaN(low) || Number.isNaN(high) || low >= high) {
         return;
     }
     prev_y_max = high;
     prev_y_min = low;
-    if(lock_y_checkbox.checked){
+    if (lock_y_checkbox.checked) {
         // don't need to do anything
-    }else {
+    } else {
         lock_y_checkbox.checked = true;
         lock_y_change_callback();
     }
@@ -669,7 +669,7 @@ var lock_y_change_callback = () => {
     // updateChart();
 };
 
-lock_y_checkbox.addEventListener('change',lock_y_change_callback);
+lock_y_checkbox.addEventListener('change', lock_y_change_callback);
 
 var lock_graph_checkbox = document.getElementById('lock-graph');
 lock_graph_checkbox.addEventListener('change', () => {
@@ -684,7 +684,7 @@ lock_graph_checkbox.addEventListener('change', () => {
 
 var reverse_mouse_element = document.getElementById('reverse-mouse');
 var reverse_mouse = () => {
-    if(reverse_mouse_direction) {
+    if (reverse_mouse_direction) {
         reverse_mouse_direction = false;
         reverse_mouse_element.innerHTML = "Reverse mouse wheel";
     } else {
@@ -709,7 +709,7 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('mousemove', () => {
-    if(slider_active === false) {
+    if (slider_active === false) {
         return;
     }
     var wrapper_range = slider_wrapper.getBoundingClientRect();
@@ -722,27 +722,27 @@ window.addEventListener('mousemove', () => {
     var valid_right = bar_right - 0.5 * bar_height;
     // console.log(`left: ${valid_left}, right: ${valid_right}`);
     var mouse_x = precise_mouse_x;
-    if(mouse_x === -1) {
+    if (mouse_x === -1) {
         // for safari
         mouse_x = mouseX;
         console.log("Safari");
     }
     var ratio = (mouse_x - valid_left) / (valid_right - valid_left);
-    if(ratio < 0) {
+    if (ratio < 0) {
         ratio = 0;
     }
-    if(ratio > 1) {
+    if (ratio > 1) {
         ratio = 1;
     }
     slider_element.style.setProperty('--line-width-ratio', ratio);
-    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio-0.5));
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio - 0.5));
     update_line_width_only(new_line_width);
     // var slider_center = slider_range.left + 0.5 * slider_range.width;
     // console.log(`Valid left: ${valid_left}, Slider center: ${slider_center}`);
     // console.log(`Valid right: ${valid_right}, Slider center: ${slider_center}`);
 });
 
-var reset_line_width= ()=> {
+var reset_line_width = () => {
     slider_element.style.setProperty('--line-width-ratio', 0.5);
     var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     update_line_width_only(new_line_width);
@@ -753,7 +753,7 @@ var pricise_mouse_event_listener = (event) => {
     var coalescedEvents;
     try {
         coalescedEvents = event.getCoalescedEvents();
-    }catch (e) {
+    } catch (e) {
         document.removeEventListener('pointermove', pricise_mouse_event_listener);
     }
     for (const coalescedEvent of coalescedEvents) {
@@ -767,7 +767,7 @@ document.addEventListener('pointermove', pricise_mouse_event_listener);
 
 var debug_checkbox_element = document.getElementById('debug-mode');
 debug_checkbox_element.addEventListener('change', () => {
-    if(debug_checkbox_element.checked) {
+    if (debug_checkbox_element.checked) {
         document.getElementById('debug-info').style.display = 'block';
     } else {
         document.getElementById('debug-info').style.display = 'none';
@@ -776,26 +776,26 @@ debug_checkbox_element.addEventListener('change', () => {
 
 var data_points_input = document.getElementById('data-points-input');
 var data_points_text = document.querySelector('#y-digits-text.data-points-after');
-data_points_input.addEventListener('input', ()=> {
+data_points_input.addEventListener('input', () => {
     var value = data_points_input.value;
     value = parseInt(value);
-    if(Number.isNaN(value) || value <50 || value > 5000) {
+    if (Number.isNaN(value) || value < 50 || value > 5000) {
         data_points_text.innerHTML = "&nbsp;Invalid";
         data_points_text.style.color = "red";
         return;
     }
-    data_points_text.innerHTML = '~ '+value*2;
+    data_points_text.innerHTML = '~ ' + value * 2;
     data_points_text.style.color = "#aaa";
 });
 
-data_points_input.addEventListener('focusout', ()=>{
+data_points_input.addEventListener('focusout', () => {
     var value = data_points_input.value;
     value = parseInt(value);
-    if(Number.isNaN(value) || value <50 || value > 5000) {
+    if (Number.isNaN(value) || value < 50 || value > 5000) {
         return;
     }
     data_points_text.style.color = "#666";
-    window_max = value*2;
+    window_max = value * 2;
     level = 0;
     viewWindow = fake_window_size;
     while (viewWindow > window_max) {

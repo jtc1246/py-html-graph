@@ -63,14 +63,14 @@ var get_chart_height_in_vw = () => {
 };
 
 var encode_value = (num) => {
-    if(y_type === Y_TYPE_UNSELECTED){
+    if (y_type === Y_TYPE_UNSELECTED) {
         return num.toFixed(2);
     }
-    if(y_type === Y_TYPE_DECIMAL){
+    if (y_type === Y_TYPE_DECIMAL) {
         return num.toFixed(y_dec_digits);
     }
-    if(y_type === Y_TYPE_SCIENTIFIC){
-        return num.toExponential(y_sci_digits-1).replace('+', '');
+    if (y_type === Y_TYPE_SCIENTIFIC) {
+        return num.toExponential(y_sci_digits - 1).replace('+', '');
     }
 };
 
@@ -78,8 +78,8 @@ var set_y_value = (min, max) => {
     // document.getElementById('y-top-value').innerHTML = max.toFixed(2);
     // document.getElementById('y-bottom-value').innerHTML = min.toFixed(2);
     // or it will be completely continuous, no space
-    document.getElementById('y-top-value').innerHTML = encode_value(max)+'<br>';
-    document.getElementById('y-bottom-value').innerHTML = encode_value(min)+'<br>';
+    document.getElementById('y-top-value').innerHTML = encode_value(max) + '<br>';
+    document.getElementById('y-bottom-value').innerHTML = encode_value(min) + '<br>';
     var interval = calc_y_interval(min, max);
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
@@ -116,7 +116,7 @@ var set_y_value = (min, max) => {
         scale_element.style.top = `${distance_to_top}vw`;
         value_element.style.top = `${distance_to_top + offset}vw`;
         // value_element.innerHTML = value.toFixed(2);
-        value_element.innerHTML = encode_value(value)+'<br>';
+        value_element.innerHTML = encode_value(value) + '<br>';
         y_axis.appendChild(value_element);
         y_axis.appendChild(scale_element);
     }
@@ -141,38 +141,38 @@ function toScientificNotation(num) {
 }
 
 var update_y_value = () => {
-    if(y_type === Y_TYPE_UNSELECTED){
+    if (y_type === Y_TYPE_UNSELECTED) {
         return;
     }
-    if(y_digits_input.value.length === 0){
+    if (y_digits_input.value.length === 0) {
         return;
     }
     var digits = Number(y_digits_input.value);
-    if(Number.isNaN(digits)){
+    if (Number.isNaN(digits)) {
         return;
     }
     digits = Math.round(digits);
-    if(y_type === Y_TYPE_SCIENTIFIC){
-        y_sci_digits = digits+1;
+    if (y_type === Y_TYPE_SCIENTIFIC) {
+        y_sci_digits = digits + 1;
     }
-    if(y_type === Y_TYPE_DECIMAL){
+    if (y_type === Y_TYPE_DECIMAL) {
         y_dec_digits = digits;
     }
     set_y_value(y_range_prev_min, y_range_prev_max);
 };
 
-var to_decimal = () =>{
+var to_decimal = () => {
     y_type = Y_TYPE_DECIMAL;
     update_y_value();
 };
 
-var to_scientific = () =>{
+var to_scientific = () => {
     y_type = Y_TYPE_SCIENTIFIC;
     update_y_value();
 };
 
 var y_digits_input = document.getElementById('y-digits');
-y_digits_input.addEventListener('input',()=>{
+y_digits_input.addEventListener('input', () => {
     console.log('y_digits_input changed');
     console.log(y_digits_input.value);
     update_y_value();
@@ -185,10 +185,10 @@ const X_STEP_MS = 5000;
 const LEVEL_S = [
     1, 2, 3, 5, 10, 15, 20, 30,
     60, 120, 180, 300, 600, 900, 1200, 1800,
-    3600, 3600*2, 3600*3, 3600*4, 3600*6, 3600*8, 3600*12,
-    86400, 86400*2, 86400*3, 86400*5, 86400*10, 86400*15, 86400*30,
-    86400*60, 86400*91, 86400*122, 86400*183, 86400*365,
-    86400*365*2, 86400*(365*3+1), 86400*(365*5+1), 86400*(365*10+2)
+    3600, 3600 * 2, 3600 * 3, 3600 * 4, 3600 * 6, 3600 * 8, 3600 * 12,
+    86400, 86400 * 2, 86400 * 3, 86400 * 5, 86400 * 10, 86400 * 15, 86400 * 30,
+    86400 * 60, 86400 * 91, 86400 * 122, 86400 * 183, 86400 * 365,
+    86400 * 365 * 2, 86400 * (365 * 3 + 1), 86400 * (365 * 5 + 1), 86400 * (365 * 10 + 2)
 ];
 const IDEAL_INTERVAL_NUM = 9;
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -212,18 +212,18 @@ var find_interval = (diff) => {
     diff = diff / 1000;
     var l = LEVEL_S.length;
     var prev_interval_num = 10000000;
-    for (var i=0; i<l; i++){
+    for (var i = 0; i < l; i++) {
         var interval_num = diff / LEVEL_S[i];
-        if(interval_num < IDEAL_INTERVAL_NUM){
-            if(interval_num+prev_interval_num<2*IDEAL_INTERVAL_NUM){
-                return LEVEL_S[i-1];
+        if (interval_num < IDEAL_INTERVAL_NUM) {
+            if (interval_num + prev_interval_num < 2 * IDEAL_INTERVAL_NUM) {
+                return LEVEL_S[i - 1];
             } else {
                 return LEVEL_S[i];
             }
         }
         prev_interval_num = interval_num;
     }
-    return LEVEL_S[l-1];
+    return LEVEL_S[l - 1];
 };
 
 var delete_x_values_scales = () => {
@@ -237,7 +237,7 @@ var delete_x_values_scales = () => {
 };
 
 var encode_unix_ms = (num) => {
-    num = Math.round(num/1000)*1000;
+    num = Math.round(num / 1000) * 1000;
     // if(x_relative){
     //     num = num - START_UNIX_MS;
     // }
@@ -250,40 +250,40 @@ var encode_unix_ms = (num) => {
     const seconds = date.getUTCSeconds();   // 获取秒
     var line1 = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     var line2 = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    if(x_relative){
-        line1 = Math.floor(num/1000/86400)+'d';
+    if (x_relative) {
+        line1 = Math.floor(num / 1000 / 86400) + 'd';
     }
     // var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     var time_str = '';
-    if(latest_x_interval_for_encoding_only <= 6*3600){
+    if (latest_x_interval_for_encoding_only <= 6 * 3600) {
         time_str = line2 + '&nbsp;<br class="no-select">' + line1;
     } else {
         time_str = line1 + '&nbsp;<br class="no-select">' + line2;
     }
-    if(x_relative){
-        date = new Date(num+START_UNIX_MS);
+    if (x_relative) {
+        date = new Date(num + START_UNIX_MS);
     }
     const week = WEEK_DAYS[date.getUTCDay()];
-    if(show_x_week){
+    if (show_x_week) {
         time_str += `&nbsp;<br class="no-select">${week}`;
     }
     return time_str;
 };
 
-var set_x_value = () =>{
+var set_x_value = () => {
     var min = currentIndex * X_STEP_MS + START_UNIX_MS;
-    var max = (currentIndex+fake_window_size) * X_STEP_MS + START_UNIX_MS;
-    if(x_relative){
+    var max = (currentIndex + fake_window_size) * X_STEP_MS + START_UNIX_MS;
+    if (x_relative) {
         min -= START_UNIX_MS;
         max -= START_UNIX_MS;
     }
     // document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
     // document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
     var diff = max - min;
-    var interval = find_interval(diff)*1000;
-    latest_x_interval_for_encoding_only = Math.round(interval/1000);
-    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
-    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
+    var interval = find_interval(diff) * 1000;
+    latest_x_interval_for_encoding_only = Math.round(interval / 1000);
+    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min) + '<br>';
+    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max) + '<br>';
     console.log(`interval: ${interval}`);
     // var start = Math.floor(min / interval) * interval;
     // var end = Math.ceil(max / interval) * interval;
@@ -316,10 +316,10 @@ var set_x_value = () =>{
         scale_element.classList.add('x-scale');
         value_element.classList.add('x-js');
         scale_element.classList.add('x-js');
-        scale_element.style.left = `${distance_to_left-0.1}vw`;
+        scale_element.style.left = `${distance_to_left - 0.1}vw`;
         value_element.style.left = `${distance_to_left}vw`;
         // value_element.innerHTML = value.toFixed(2);
-        value_element.innerHTML = encode_unix_ms(value)+'<br>';
+        value_element.innerHTML = encode_unix_ms(value) + '<br>';
         x_axis.appendChild(value_element);
         x_axis.appendChild(scale_element);
     }
@@ -328,8 +328,8 @@ var set_x_value = () =>{
 };
 
 var show_x_week_checkbox = document.getElementById('x-week');
-show_x_week_checkbox.addEventListener('change',()=>{
-    if(show_x_week_checkbox.checked){
+show_x_week_checkbox.addEventListener('change', () => {
+    if (show_x_week_checkbox.checked) {
         show_x_week = true;
     } else {
         show_x_week = false;
@@ -338,8 +338,8 @@ show_x_week_checkbox.addEventListener('change',()=>{
 });
 
 var x_relative_checkbox = document.getElementById('x-relative');
-x_relative_checkbox.addEventListener('change',()=>{
-    if(x_relative_checkbox.checked){
+x_relative_checkbox.addEventListener('change', () => {
+    if (x_relative_checkbox.checked) {
         x_relative = true;
     } else {
         x_relative = false;
@@ -352,12 +352,12 @@ var copy_info = async () => {
     information += document.getElementById('title').innerHTML + '\n';
     information += document.getElementById('y-title').innerHTML + '\n';
     var y_values = document.getElementsByClassName('y-value');
-    for(var i=y_values.length-1; i>=0; i--){
+    for (var i = y_values.length - 1; i >= 0; i--) {
         information += y_values[i].innerHTML.replace('<br>', '\n');
     }
     var x_values = document.getElementsByClassName('x-value');
-    for(var i=0; i<x_values.length; i++){
-        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>','')+'\n';
+    for (var i = 0; i < x_values.length; i++) {
+        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>', '') + '\n';
     }
     information += document.getElementById('x-title').innerHTML + '\n';
     await navigator.clipboard.writeText(information);

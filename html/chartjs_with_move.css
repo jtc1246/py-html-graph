@@ -16,10 +16,11 @@
     height: 40vw;
     display: grid;
     grid-template-columns: 4.7619vw 88.0952vw 7.1429vw;
-    grid-template-rows: 2.5vw 1fr 3.5vw;
+    grid-template-rows: 2.5vw 1fr 4vw;
     justify-content: center;
     align-items: center;
     justify-items: center;
+    margin-bottom: 1vw;
 }
 
 #force-overflow-hidden {
@@ -176,6 +177,18 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+}
+
+#x-title {
+    position: absolute;
+    font-size: 1.1vw;
+    line-height: 1.2vw;
+    width: 100%;
+    /* transform: translate(-50%, 0); */
+    left: 0;
+    top: 2.8vw;
+    text-align: center;
+    overflow: hidden;
 }
 
 #downleft {

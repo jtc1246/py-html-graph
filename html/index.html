@@ -799,6 +799,63 @@ html {
     background-color: #ccc;
 }
 
+#copy-info {
+    display: inline;
+    height: 100%;
+    line-height: 2vw;
+    margin-left: 0vw;
+    font-size: 1.25vw;
+    background-color: #aaa;
+    width: 8vw;
+    border-radius: 0.5vw;
+    color: #fff;
+    text-align: center;
+    user-select: none;
+    margin-left: 2vw;
+}
+
+#copy-info:hover {
+    cursor: pointer;
+    background-color: #bbb;
+}
+
+#copy-info:active {
+    background-color: #ccc;
+}
+
+#y-format.data-points {
+    position: static;
+    height: 100%;
+    display: inline-flex;
+    margin-left: 2vw;
+    border-color: #aaa;
+    justify-content: flex-start;
+    width: 31vw;
+}
+
+#y-value-text.data-points-text {
+    color: #888;
+    padding-left: 0.8vw;
+}
+
+#y-digits-text.data-points-after {
+    color: #888;
+    padding-left: 0.3vw;
+}
+
+#data-points-input {
+    font-size: 1.125vw;
+    height: 1.3vw;
+    border: 0;
+    /* border-radius: 0.5vw; */
+    border-bottom: 0.15vw solid #888;
+    /* padding-left: 0.1vw; */
+    width: 4vw;
+    caret-color: #aaa;
+    text-align: center;
+    color: #666;
+}
+
 #debug-info {
     padding-top: 1vw;
     padding-left: 2vw;
@@ -921,7 +978,11 @@ html {
             </div>
         </div>
         <div id="debug-info">
-            <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button>
+            <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button><button id="copy-info" onclick="copy_info()">Copy info</button><div id="y-format" class="data-points">
+                <p id="y-value-text" class="data-points-text">Data points in window (50 ~ 5000):</p>
+                <input type="text" id="data-points-input" value="600">
+                <p id="y-digits-text" class="data-points-after">~ 1200</p>
+            </div>
             <!-- <p id="reverse-mouse">Reverse mouse wheel direction</p> -->
         </div>
         <div id="debug-container">
@@ -1287,7 +1348,22 @@ x_relative_checkbox.addEventListener('change',()=>{
         x_relative = false;
     }
     set_x_value();
-});</script>
+});
+
+var copy_info = async () => {
+    var information = '';
+    information += document.getElementById('title').innerHTML + '\n';
+    information += document.getElementById('y-title').innerHTML + '\n';
+    var y_values = document.getElementsByClassName('y-value');
+    for(var i=y_values.length-1; i>=0; i--){
+        information += y_values[i].innerHTML.replace('<br>', '\n');
+    }
+    var x_values = document.getElementsByClassName('x-value');
+    for(var i=0; i<x_values.length; i++){
+        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>','')+'\n';
+    }
+    await navigator.clipboard.writeText(information);
+};</script>
     <script>const ACTION_IGNORE = 10000001;
 const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;
@@ -1310,7 +1386,7 @@ var debug2_element = document.getElementById('debug2');
 // Generate sample data
 const totalDataPoints = 500000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
-const window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
+var window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
 _ = 0                    // 暂定：初始情况为最小级，但是 window 大小为 3/4
 let viewWindow = 900; // 实际渲染时使用的数据点的数量
@@ -2062,6 +2138,37 @@ debug_checkbox_element.addEventListener('change', () => {
     } else {
         document.getElementById('debug-info').style.display = 'none';
     }
+});
+
+var data_points_input = document.getElementById('data-points-input');
+var data_points_text = document.querySelector('#y-digits-text.data-points-after');
+data_points_input.addEventListener('input', ()=> {
+    var value = data_points_input.value;
+    value = parseInt(value);
+    if(Number.isNaN(value) || value <50 || value > 5000) {
+        data_points_text.innerHTML = "&nbsp;Invalid";
+        data_points_text.style.color = "red";
+        return;
+    }
+    data_points_text.innerHTML = '~ '+value*2;
+    data_points_text.style.color = "#aaa";
+});
+
+data_points_input.addEventListener('focusout', ()=>{
+    var value = data_points_input.value;
+    value = parseInt(value);
+    if(Number.isNaN(value) || value <50 || value > 5000) {
+        return;
+    }
+    data_points_text.style.color = "#666";
+    window_max = value*2;
+    level = 0;
+    viewWindow = fake_window_size;
+    while (viewWindow > window_max) {
+        viewWindow /= 2;
+        level++;
+    }
+    updateChart();
 });</script>
 </body>
 

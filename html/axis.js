@@ -302,7 +302,9 @@ var set_x_value = () =>{
     var width_in_vw = get_chart_width_in_vw();
     var x_axis = document.getElementById("x");
     var right_value = document.getElementById('x-right-value'); // must put it at last
+    var x_title_element = document.getElementById('x-title');
     x_axis.removeChild(right_value);
+    x_axis.removeChild(x_title_element);
     for (var i = start; i <= end; i++) {
         var value = i * interval;
         var distance_to_left = (value - min) / (max - min) * width_in_vw;
@@ -322,6 +324,7 @@ var set_x_value = () =>{
         x_axis.appendChild(scale_element);
     }
     x_axis.appendChild(right_value);
+    x_axis.appendChild(x_title_element);
 };
 
 var show_x_week_checkbox = document.getElementById('x-week');
@@ -356,5 +359,6 @@ var copy_info = async () => {
     for(var i=0; i<x_values.length; i++){
         information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>','')+'\n';
     }
+    information += document.getElementById('x-title').innerHTML + '\n';
     await navigator.clipboard.writeText(information);
 };

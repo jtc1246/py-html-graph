@@ -22,7 +22,7 @@
     flex-grow: 0;
     flex-shrink: 0;
     flex-flow: nowrap;
-    vertical-align: baseline;
+    vertical-align: top;
     caret-color: #000;
 }
 

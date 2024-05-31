@@ -39,6 +39,7 @@ var mouseX = 0;
 var is_touchpad = false;
 var mouse_pressed = false;
 var prev_mouse_loc = -1;
+var reverse_mouse_direction = false;
 
 window.addEventListener('mouseup', () => {
     mouse_pressed = false;
@@ -395,6 +396,10 @@ function updateChart() {
 
 
 function handle_wheel(event) {
+    // console.log(event.deltaMode);
+    // console.log(event.deltaY);
+    // console.log(event.wheelDeltaY);
+    // console.log(`deltaY: ${event.deltaY}, wheelDeltaY: ${event.wheelDeltaY}`)
     if (event.deltaX !== 0) {
         is_touchpad = true;
     }
@@ -404,7 +409,16 @@ function handle_wheel(event) {
     }
     var y = event.deltaY;
     var x = event.deltaX;
+    // Currently will not implement this (distinguish whether it is mouse or trackpad, reverse
+    // the direction if it is mouse), the following method works on mac, but not works on linux.
+    // var tmptmp = Math.abs(y) % 1;
+    // if(tmptmp >0.0001 && tmptmp < 0.9999) {
+    //     y = -y;
+    // }
     // console.log(`x: ${x}, y: ${y}`);
+    if (reverse_mouse_direction) {
+        y = -y;
+    }
     var action = -1;
     if (y === 0) {
         action = ACTION_LEFTRIGHT;
@@ -605,3 +619,14 @@ lock_graph_checkbox.addEventListener('change', () => {
         chart_element.classList.remove('locked');
     }
 });
+
+var reverse_mouse_element = document.getElementById('reverse-mouse');
+var reverse_mouse = () => {
+    if(reverse_mouse_direction) {
+        reverse_mouse_direction = false;
+        reverse_mouse_element.innerHTML = "Reverse mouse wheel";
+    } else {
+        reverse_mouse_direction = true;
+        reverse_mouse_element.innerHTML = "Unreverse mouse wheel";
+    }
+}

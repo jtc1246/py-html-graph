@@ -20,7 +20,7 @@ var debug2_element = document.getElementById('debug2');
 // Generate sample data
 const totalDataPoints = 500000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
-const window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
+var window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
 _ = 0                    // 暂定：初始情况为最小级，但是 window 大小为 3/4
 let viewWindow = 900; // 实际渲染时使用的数据点的数量
@@ -772,4 +772,35 @@ debug_checkbox_element.addEventListener('change', () => {
     } else {
         document.getElementById('debug-info').style.display = 'none';
     }
+});
+
+var data_points_input = document.getElementById('data-points-input');
+var data_points_text = document.querySelector('#y-digits-text.data-points-after');
+data_points_input.addEventListener('input', ()=> {
+    var value = data_points_input.value;
+    value = parseInt(value);
+    if(Number.isNaN(value) || value <50 || value > 5000) {
+        data_points_text.innerHTML = "&nbsp;Invalid";
+        data_points_text.style.color = "red";
+        return;
+    }
+    data_points_text.innerHTML = '~ '+value*2;
+    data_points_text.style.color = "#aaa";
+});
+
+data_points_input.addEventListener('focusout', ()=>{
+    var value = data_points_input.value;
+    value = parseInt(value);
+    if(Number.isNaN(value) || value <50 || value > 5000) {
+        return;
+    }
+    data_points_text.style.color = "#666";
+    window_max = value*2;
+    level = 0;
+    viewWindow = fake_window_size;
+    while (viewWindow > window_max) {
+        viewWindow /= 2;
+        level++;
+    }
+    updateChart();
 });

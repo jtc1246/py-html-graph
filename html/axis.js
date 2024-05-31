@@ -343,3 +343,18 @@ x_relative_checkbox.addEventListener('change',()=>{
     }
     set_x_value();
 });
+
+var copy_info = async () => {
+    var information = '';
+    information += document.getElementById('title').innerHTML + '\n';
+    information += document.getElementById('y-title').innerHTML + '\n';
+    var y_values = document.getElementsByClassName('y-value');
+    for(var i=y_values.length-1; i>=0; i--){
+        information += y_values[i].innerHTML.replace('<br>', '\n');
+    }
+    var x_values = document.getElementsByClassName('x-value');
+    for(var i=0; i<x_values.length; i++){
+        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>','')+'\n';
+    }
+    await navigator.clipboard.writeText(information);
+};

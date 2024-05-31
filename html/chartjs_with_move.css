@@ -687,6 +687,63 @@ html {
     background-color: #ccc;
 }
 
+#copy-info {
+    display: inline;
+    height: 100%;
+    line-height: 2vw;
+    margin-left: 0vw;
+    font-size: 1.25vw;
+    background-color: #aaa;
+    width: 8vw;
+    border-radius: 0.5vw;
+    color: #fff;
+    text-align: center;
+    user-select: none;
+    margin-left: 2vw;
+}
+
+#copy-info:hover {
+    cursor: pointer;
+    background-color: #bbb;
+}
+
+#copy-info:active {
+    background-color: #ccc;
+}
+
+#y-format.data-points {
+    position: static;
+    height: 100%;
+    display: inline-flex;
+    margin-left: 2vw;
+    border-color: #aaa;
+    justify-content: flex-start;
+    width: 31vw;
+}
+
+#y-value-text.data-points-text {
+    color: #888;
+    padding-left: 0.8vw;
+}
+
+#y-digits-text.data-points-after {
+    color: #888;
+    padding-left: 0.3vw;
+}
+
+#data-points-input {
+    font-size: 1.125vw;
+    height: 1.3vw;
+    border: 0;
+    /* border-radius: 0.5vw; */
+    border-bottom: 0.15vw solid #888;
+    /* padding-left: 0.1vw; */
+    width: 4vw;
+    caret-color: #aaa;
+    text-align: center;
+    color: #666;
+}
+
 #debug-info {
     padding-top: 1vw;
     padding-left: 2vw;

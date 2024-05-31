@@ -30,7 +30,7 @@ var delete_y_values_scales = () => {
             y_axis.removeChild(children[i]);
         }
     }
-}
+};
 
 var calc_y_interval = (min, max) => {
     var diff = max - min;
@@ -60,7 +60,7 @@ var get_chart_height_in_vw = () => {
     // console.log(`window_width: ${window_width}`);
     // console.log(`vw: ${vw}`);
     return vw;
-}
+};
 
 var encode_value = (num) => {
     if(y_type === Y_TYPE_UNSELECTED){
@@ -72,7 +72,7 @@ var encode_value = (num) => {
     if(y_type === Y_TYPE_SCIENTIFIC){
         return num.toExponential(y_sci_digits-1).replace('+', '');
     }
-}
+};
 
 var set_y_value = (min, max) => {
     // document.getElementById('y-top-value').innerHTML = max.toFixed(2);
@@ -123,7 +123,7 @@ var set_y_value = (min, max) => {
     y_axis.appendChild(bottom_value);
     y_range_prev_max = max;
     y_range_prev_min = min;
-}
+};
 
 function toScientificNotation(num) {
     // 将数字转换为科学记数法字符串
@@ -159,17 +159,17 @@ var update_y_value = () => {
         y_dec_digits = digits;
     }
     set_y_value(y_range_prev_min, y_range_prev_max);
-}
+};
 
 var to_decimal = () =>{
     y_type = Y_TYPE_DECIMAL;
     update_y_value();
-}
+};
 
 var to_scientific = () =>{
     y_type = Y_TYPE_SCIENTIFIC;
     update_y_value();
-}
+};
 
 var y_digits_input = document.getElementById('y-digits');
 y_digits_input.addEventListener('input',()=>{
@@ -177,3 +177,115 @@ y_digits_input.addEventListener('input',()=>{
     console.log(y_digits_input.value);
     update_y_value();
 });
+
+
+// ========================= Following is for X axis =========================
+const START_UNIX_MS = 0;
+const X_STEP_MS = 5000;
+const LEVEL_S = [
+    1, 2, 3, 5, 10, 15, 20, 30,
+    60, 120, 180, 300, 600, 900, 1200, 1800,
+    3600, 3600*2, 3600*3, 3600*4, 3600*6, 3600*8, 3600*12,
+    86400, 86400*2, 86400*3, 86400*5, 86400*10, 86400*15, 86400*30,
+    86400*60, 86400*91, 86400*122, 86400*183, 86400*365,
+    86400*365*2, 86400*(365*3+1), 86400*(365*5+1), 86400*(365*10+2)
+];
+const IDEAL_INTERVAL_NUM = 9;
+
+var get_chart_width_in_vw = () => {
+    var chart = document.getElementById("myChart");
+    var width = chart.clientWidth;
+    var window_width = document.querySelector('main').clientWidth;
+    var vw = width / window_width * 100;
+    // console.log(`window_width: ${window_width}`);
+    // console.log(`vw: ${vw}`);
+    return vw;
+};
+
+var find_interval = (diff) => {
+    diff = diff / 1000;
+    var l = LEVEL_S.length;
+    var prev_interval_num = 10000000;
+    for (var i=0; i<l; i++){
+        var interval_num = diff / LEVEL_S[i];
+        if(interval_num < IDEAL_INTERVAL_NUM){
+            if(interval_num+prev_interval_num<2*IDEAL_INTERVAL_NUM){
+                return LEVEL_S[i-1];
+            } else {
+                return LEVEL_S[i];
+            }
+        }
+        prev_interval_num = interval_num;
+    }
+    return LEVEL_S[l-1];
+};
+
+var delete_x_values_scales = () => {
+    var x_axis = document.getElementById("x");
+    var children = x_axis.children;
+    for (var i = children.length - 1; i >= 0; i--) {
+        if (children[i].classList.contains('x-js')) {
+            x_axis.removeChild(children[i]);
+        }
+    }
+};
+
+var encode_unix_ms = (num) => {
+    num = Math.round(num/1000)*1000;
+    var date = new Date(num);
+    const year = date.getUTCFullYear();     // 获取年份
+    const month = date.getUTCMonth() + 1;   // 获取月份，getUTCMonth()返回的是0-11，所以需要+1
+    const day = date.getUTCDate();          // 获取日
+    const hours = date.getUTCHours();       // 获取小时
+    const minutes = date.getUTCMinutes();   // 获取分钟
+    const seconds = date.getUTCSeconds();   // 获取秒
+    var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return time_str;
+};
+
+var set_x_value = () =>{
+    var min = currentIndex * X_STEP_MS + START_UNIX_MS;
+    var max = (currentIndex+fake_window_size) * X_STEP_MS + START_UNIX_MS;
+    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
+    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
+    var diff = max - min;
+    var interval = find_interval(diff)*1000;
+    console.log(`interval: ${interval}`);
+    // var start = Math.floor(min / interval) * interval;
+    // var end = Math.ceil(max / interval) * interval;
+    var start = Math.floor(min / interval) + 1;
+    var end = Math.floor(max / interval);
+    console.log(`start: ${start}`);
+    console.log(`end: ${end}`);
+    var num = (max - min) / interval;
+    if (start * interval - min < interval * 0.5) {
+        start += 1
+    }
+    if (max - end * interval < interval * 0.5) {
+        end -= 1
+    }
+    delete_x_values_scales();
+    var width_in_vw = get_chart_width_in_vw();
+    var x_axis = document.getElementById("x");
+    var right_value = document.getElementById('x-right-value'); // must put it at last
+    x_axis.removeChild(right_value);
+    for (var i = start; i <= end; i++) {
+        var value = i * interval;
+        var distance_to_left = (value - min) / (max - min) * width_in_vw;
+        // 刻度线的距离是多少就是多少
+        // 数据值的距离, 如果想要在上方, 是 (距离 - 0.75vw), 如果想要在下方, 是 (距离 + 0.1vw)
+        var value_element = document.createElement('p');
+        var scale_element = document.createElement('div');
+        value_element.classList.add('x-value');
+        scale_element.classList.add('x-scale');
+        value_element.classList.add('x-js');
+        scale_element.classList.add('x-js');
+        scale_element.style.left = `${distance_to_left-0.1}vw`;
+        value_element.style.left = `${distance_to_left}vw`;
+        // value_element.innerHTML = value.toFixed(2);
+        value_element.innerHTML = encode_unix_ms(value)+'<br>';
+        x_axis.appendChild(value_element);
+        x_axis.appendChild(scale_element);
+    }
+    x_axis.appendChild(right_value);
+};

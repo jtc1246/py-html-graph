@@ -370,6 +370,7 @@ function createChart() {
     // document.getElementById('y-top-value').innerHTML = chart_y_max.toFixed(2);
     // document.getElementById('y-bottom-value').innerHTML = chart_y_min.toFixed(2);
     set_y_value(chart_y_min, chart_y_max);
+    set_x_value();
     return new Chart(ctx, config);
 }
 
@@ -666,7 +667,7 @@ var lock_y_change_callback = () => {
         fix_y_mask_element.style.display = 'none';
     }
     // updateChart();
-}
+};
 
 lock_y_checkbox.addEventListener('change',lock_y_change_callback);
 
@@ -690,7 +691,7 @@ var reverse_mouse = () => {
         reverse_mouse_direction = true;
         reverse_mouse_element.innerHTML = "Unreverse mouse wheel";
     }
-}
+};
 
 var slider_element = document.getElementById('slider-button');
 var slider_wrapper = document.getElementById('slider-wrapper');
@@ -745,7 +746,7 @@ var reset_line_width= ()=> {
     slider_element.style.setProperty('--line-width-ratio', 0.5);
     var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     update_line_width_only(new_line_width);
-}
+};
 
 var pricise_mouse_event_listener = (event) => {
     // 使用 getCoalescedEvents 获取高精度的鼠标位置

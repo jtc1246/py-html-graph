@@ -48,6 +48,7 @@
     width: 100%;
     height: 100%;
     position: relative;
+    overflow: visible;
 }
 
 #y {
@@ -128,6 +129,53 @@
     height: 100vw;
     text-align: center;
     overflow: visible;
+}
+
+.x-scale {
+    position: absolute;
+    width: 0.1vw;
+    background-color: #282828;
+    top: 0;
+    height: 0.5vw;
+}
+
+#x-left-scale {
+    left: -0.1vw;
+    /* background-color: yellow; */
+}
+
+#x-right-scale {
+    left: calc(100% - 0.1vw);
+    /* background-color: yellow; */
+}
+
+.x-value {
+    position: absolute;
+    font-size: 0.6vw;
+    line-height: 0.72vw;
+    height: 2.16vw;
+    /* background-color: yellow; */
+    width: 10vw;
+    top: 0.5vw;
+    text-align: center;
+    /* background-color: yellow; */
+    transform: translate(-50%, 0);
+    /* overflow: visible; */
+}
+
+#x-left-value {
+    left: 0;
+}
+
+#x-right-value {
+    left: 100%;
+}
+
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 #downleft {

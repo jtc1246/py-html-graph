@@ -85,6 +85,14 @@
                 <input type="checkbox" id="debug-mode">
                 <p id="x-relative-text">Debug mode</p>
             </label>
+            <div id="line-width-wrapper">
+                <p id="y-value-text" class="y-range-text">Line width:</p>
+                <!-- <input type="range" id="line-width"> -->
+                <div id="slider-wrapper">
+                    <div id="slider-button"></div>
+                </div>
+                <button id="lw-reset" onclick="set_y_range()">Reset</button>
+            </div>
         </div>
         <div id="debug-info">
             <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button>

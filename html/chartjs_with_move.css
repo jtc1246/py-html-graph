@@ -358,6 +358,7 @@
 #y-value-text {
     /* padding-left: 1vw; */
     padding-right: 1vw;
+    cursor: default;
 }
 
 #decimal-wrapper, #scientific-wrapper {
@@ -519,6 +520,79 @@
     border: 0;
     padding: 0;
     margin: 0;
+}
+
+#line-width-wrapper {
+    display: flex;
+    position: absolute;
+    height: 2.5vw;
+    width: 22vw;
+    top: 0vw;
+    left: 67vw;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+    align-items: center;
+    justify-content: center;
+}
+
+#lw-reset {
+    font-size: 1.25vw;
+    background-color: #198754;
+    color: #fff;
+    height: 1.75vw;
+    margin-left: 1vw;
+    width: 4.5vw;
+    border-radius: 0.5vw;
+}
+
+#lw-reset:hover {
+    cursor: pointer;
+    background-color: #289663;
+}
+
+#lw-reset:active {
+    background-color: #46ac7d;
+}
+
+#slider-wrapper {
+    width: 8vw;
+    height: 0.3vw;
+    background: #bbb;
+    border-radius: 0.15vw;
+    overflow: visible;
+    border: 0.05vw solid #000;
+    box-shadow: 0 0 1vw rgba(0, 0, 0, 0.3);
+}
+
+#slider-button {
+    width: 0.75vw;
+    height: 0.75vw;
+    border-radius: 0.375vw;
+    background: #3478f6;
+    /* background: rgba(0,0,0,0) !important; */
+    border: 0.1vw solid #5088f0;
+    margin-top: -0.275vw;
+    /* 这里可滑动的长度是 7.7vw, 滑动时只要更新 ratio 就行 */
+    margin-left: calc(-0.275vw + 7.7vw * var(--line-width-ratio, 0.3333));
+    /* box-shadow: 0 0 0.5vw rgba(52, 120, 246, 0.5); */
+    /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
+}
+
+#slider-button:hover {
+    background: #5088f0;
+    border: 0.1vw solid #6194f2;
+}
+
+#slider-button:active {
+    background: #6194f2;
+    border: 0.1vw solid #6194f2;
+}
+
+#options * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 /* 6. For thr general page */

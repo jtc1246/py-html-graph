@@ -41,6 +41,9 @@ var mouse_pressed = false;
 var prev_mouse_loc = -1;
 var reverse_mouse_direction = false;
 
+var slider_active = false;
+var precise_mouse_x = -1;
+
 window.addEventListener('mouseup', () => {
     mouse_pressed = false;
 });
@@ -630,3 +633,67 @@ var reverse_mouse = () => {
         reverse_mouse_element.innerHTML = "Unreverse mouse wheel";
     }
 }
+
+var slider_element = document.getElementById('slider-button');
+var slider_wrapper = document.getElementById('slider-wrapper');
+
+
+
+slider_element.addEventListener('mousedown', () => {
+    // console.log("Mouse down");
+    slider_active = true;
+});
+
+window.addEventListener('mouseup', () => {
+    // console.log("Mouse up");
+    slider_active = false;
+});
+
+window.addEventListener('mousemove', () => {
+    if(slider_active === false) {
+        return;
+    }
+    var wrapper_range = slider_wrapper.getBoundingClientRect();
+    var slider_range = slider_element.getBoundingClientRect();
+    // var bar_width = wrapper_range.width;
+    var bar_height = wrapper_range.height;
+    var bar_left = wrapper_range.left;
+    var bar_right = wrapper_range.right;
+    var valid_left = bar_left + 0.5 * bar_height;
+    var valid_right = bar_right - 0.5 * bar_height;
+    // console.log(`left: ${valid_left}, right: ${valid_right}`);
+    var mouse_x = precise_mouse_x;
+    if(mouse_x === -1) {
+        // for safari
+        mouse_x = mouseX;
+        console.log("Safari");
+    }
+    var ratio = (mouse_x - valid_left) / (valid_right - valid_left);
+    if(ratio < 0) {
+        ratio = 0;
+    }
+    if(ratio > 1) {
+        ratio = 1;
+    }
+    slider_element.style.setProperty('--line-width-ratio', ratio);
+    // var slider_center = slider_range.left + 0.5 * slider_range.width;
+    // console.log(`Valid left: ${valid_left}, Slider center: ${slider_center}`);
+    // console.log(`Valid right: ${valid_right}, Slider center: ${slider_center}`);
+});
+
+var pricise_mouse_event_listener = (event) => {
+    // 使用 getCoalescedEvents 获取高精度的鼠标位置
+    var coalescedEvents;
+    try {
+        coalescedEvents = event.getCoalescedEvents();
+    }catch (e) {
+        document.removeEventListener('pointermove', pricise_mouse_event_listener);
+    }
+    for (const coalescedEvent of coalescedEvents) {
+        const x = coalescedEvent.clientX;
+        const y = coalescedEvent.clientY;
+        precise_mouse_x = x;
+    }
+};
+
+document.addEventListener('pointermove', pricise_mouse_event_listener);

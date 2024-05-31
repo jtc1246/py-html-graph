@@ -266,9 +266,9 @@ body::-webkit-scrollbar {
 /* 5. For the options */
 #options {
     position: relative;
-    width: 95vw;
-    margin-left: 2.5vw;
-    margin-right: 2.5vw;
+    width: 89vw;
+    margin-left: 5.5vw;
+    margin-right: 5.5vw;
     /* background-color: yellow; */
     height: 5.75vw;
 }
@@ -470,6 +470,7 @@ body::-webkit-scrollbar {
 #y-value-text {
     /* padding-left: 1vw; */
     padding-right: 1vw;
+    cursor: default;
 }
 
 #decimal-wrapper, #scientific-wrapper {
@@ -547,6 +548,165 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
 }
 
+#y-range {
+    display: flex;
+    position: absolute;
+    height: 2.5vw;
+    width: 24vw;
+    top: 0vw;
+    left: 42vw;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+    align-items: center;
+    justify-content: center;
+}
+
+#y-range-1, #y-range-2 {
+    font-size: 1.125vw;
+    height: 1.75vw;
+    border: 0.15vw solid #ff0000;
+    border-radius: 0.5vw;
+    padding-left: 0.3vw;
+    padding-right: 0.3vw;
+    width: 4vw;
+    margin-left: 0.3vw;
+    text-align: center;
+}
+
+#y-range-1::placeholder, #y-range-2::placeholder {
+    color: #989898;
+}
+
+#y-value-text.y-range-text {
+    padding-right: 0;
+    padding-right: 0.5vw;
+}
+
+#y-range-ok {
+    font-size: 1.25vw;
+    background-color: #198754;
+    color: #fff;
+    height: 1.75vw;
+    margin-left: 1vw;
+    width: 3vw;
+    border-radius: 0.5vw;
+}
+
+#y-range-ok:hover {
+    cursor: pointer;
+    background-color: #289663;
+}
+
+#y-range-ok:active {
+    background-color: #46ac7d;
+}
+
+#x-relative-wrapper.x-week-wrapper {
+    left: 60vw;
+}
+
+#x-week:hover {
+    cursor: pointer;
+}
+
+#x-week {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+#x-relative-wrapper.debug-mode-wrapper {
+    left: 77vw;
+    width: 12vw;
+}
+
+#debug-mode:hover {
+    cursor: pointer;
+}
+
+#debug-mode {
+    height: 1.5vw;
+    width: 1.5vw;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+#line-width-wrapper {
+    display: flex;
+    position: absolute;
+    height: 2.5vw;
+    width: 22vw;
+    top: 0vw;
+    left: 67vw;
+    border: 0.15vw solid #0037fe;
+    border-radius: 0.75vw;
+    align-items: center;
+    justify-content: center;
+}
+
+#lw-reset {
+    font-size: 1.25vw;
+    background-color: #198754;
+    color: #fff;
+    height: 1.75vw;
+    margin-left: 1vw;
+    width: 4.5vw;
+    border-radius: 0.5vw;
+}
+
+#lw-reset:hover {
+    cursor: pointer;
+    background-color: #289663;
+}
+
+#lw-reset:active {
+    background-color: #46ac7d;
+}
+
+#slider-wrapper {
+    width: 8vw;
+    height: 0.3vw;
+    background: #bbb;
+    border-radius: 0.15vw;
+    overflow: visible;
+    border: 0.05vw solid #000;
+    box-shadow: 0 0 1vw rgba(0, 0, 0, 0.3);
+}
+
+#slider-button {
+    width: 0.75vw;
+    height: 0.75vw;
+    border-radius: 0.375vw;
+    background: #3478f6;
+    /* background: rgba(0,0,0,0) !important; */
+    border: 0.1vw solid #5088f0;
+    margin-top: -0.275vw;
+    /* 这里可滑动的长度是 7.7vw, 滑动时只要更新 ratio 就行 */
+    margin-left: calc(-0.275vw + 7.7vw * var(--line-width-ratio, 0.5));
+    /* box-shadow: 0 0 0.5vw rgba(52, 120, 246, 0.5); */
+    /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
+}
+
+#slider-button:hover {
+    background: #5088f0;
+    border: 0.1vw solid #6194f2;
+}
+
+#slider-button:active {
+    background: #6194f2;
+    border: 0.1vw solid #6194f2;
+}
+
+#options * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
 /* 6. For thr general page */
 html {
     background-color: #eee;
@@ -554,6 +714,7 @@ html {
 
 * {
     color: #282828;
+    caret-color: #3478F6;
 }
 
 
@@ -681,6 +842,30 @@ html {
                 <input type="checkbox" id="x-relative">
                 <p id="x-relative-text">Use relative time in X</p>
             </label>
+            <div id="y-range">
+                <p id="y-value-text" class="y-range-text">Y range:</p>
+                <p id="y-digits-text">from</p>
+                <input type="text" id="y-range-1" placeholder="0">
+                <p id="y-digits-text">to</p>
+                <input type="text" id="y-range-2" placeholder="0">
+                <button id="y-range-ok" onclick="set_y_range()">OK</button>
+            </div>
+            <label id="x-relative-wrapper" class="x-week-wrapper">
+                <input type="checkbox" id="x-week">
+                <p id="x-relative-text">Show week day in X</p>
+            </label>
+            <label id="x-relative-wrapper" class="debug-mode-wrapper">
+                <input type="checkbox" id="debug-mode" checked="true">
+                <p id="x-relative-text">Debug mode</p>
+            </label>
+            <div id="line-width-wrapper">
+                <p id="y-value-text" class="y-range-text">Line width:</p>
+                <!-- <input type="range" id="line-width"> -->
+                <div id="slider-wrapper">
+                    <div id="slider-button"></div>
+                </div>
+                <button id="lw-reset" onclick="reset_line_width()">Reset</button>
+            </div>
         </div>
         <div id="debug-info">
             <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse wheel</button>
@@ -923,6 +1108,9 @@ var mouse_pressed = false;
 var prev_mouse_loc = -1;
 var reverse_mouse_direction = false;
 
+var slider_active = false;
+var precise_mouse_x = -1;
+
 window.addEventListener('mouseup', () => {
     mouse_pressed = false;
 });
@@ -954,6 +1142,7 @@ var current_min = Number.MAX_VALUE;
 var prev_y_max = null;
 var prev_y_min = null;
 var graph_locked = false;
+var latest_line_width = 0;
 
 const numWorkers = 10;
 const workers = [];
@@ -1179,6 +1368,8 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
     return Math.round(num - tmp + multiple + remainder);
 };
 
+var prev_config = null;
+
 
 function createChart() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
@@ -1191,6 +1382,9 @@ function createChart() {
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     current_min = Number.MAX_VALUE;
     current_max = Number.MIN_VALUE;
+    if(latest_line_width === 0){
+        latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
+    }
     const config = {
         type: 'line',
         data: {
@@ -1199,7 +1393,7 @@ function createChart() {
                 ...dataset,
                 data: slice(dataset.data, start, end_plus_one, step),
                 pointRadius: 0,
-                borderWidth: document.querySelector('main').clientWidth / 300 * 28 / 100,
+                borderWidth: latest_line_width,
                 tension: 0,
                 borderJoinStyle: 'round'
             }))
@@ -1235,6 +1429,7 @@ function createChart() {
             }
         }
     };
+    prev_config = config;
     fit_y_current = false;
     var chart_y_min = config.options.scales.y.min;
     var chart_y_max = config.options.scales.y.max;
@@ -1244,6 +1439,36 @@ function createChart() {
     set_y_value(chart_y_min, chart_y_max);
     return new Chart(ctx, config);
 }
+
+var update_line_width_only = (new_width) => {
+    latest_line_width = new_width;
+    prev_config.data.datasets.forEach((dataset) => {
+        dataset.borderWidth = new_width;
+    });
+    myChart.destroy();
+    myChart = new Chart(ctx, prev_config);
+    var time = performance.now() - t;
+    if (time > 500) {
+        t = performance.now();
+        return;
+    }
+    fps_datas.push(time);
+    if (fps_datas.length > 10) {
+        fps_datas.shift();
+    }
+    if (performance.now() - last_update_time > 150) {
+        last_update_time = performance.now();
+        var sum = 0;
+        for (var i = 0; i < fps_datas.length; i++) {
+            sum += fps_datas[i];
+        }
+        time = sum / fps_datas.length;
+        var fps = 1000 / time;
+        var e = document.getElementById("fps");
+        e.innerHTML = `FPS: ${fps.toFixed(2)}`;
+    }
+    t = performance.now();
+};
 
 
 // Function to update the chart view window by recreating the chart
@@ -1291,7 +1516,7 @@ function handle_wheel(event) {
     }
     var y = event.deltaY;
     var x = event.deltaX;
-    // Currently will not implement this (distinguish whether it is mouse or trackpad, reverse
+    // Currently will not implement this (distinguish whether it is mouse or touchpad, reverse
     // the direction if it is mouse), the following method works on mac, but not works on linux.
     // var tmptmp = Math.abs(y) % 1;
     // if(tmptmp >0.0001 && tmptmp < 0.9999) {
@@ -1306,9 +1531,9 @@ function handle_wheel(event) {
         action = ACTION_LEFTRIGHT;
     } else if (x === 0) {
         action = ACTION_UPDOWN;
-    } else if (Math.abs(y) >= 3 * Math.abs(x)) {
+    } else if (Math.abs(y) >= 2 * Math.abs(x)) {
         action = ACTION_UPDOWN;
-    } else if (Math.abs(x) >= 3 * Math.abs(y)) {
+    } else if (Math.abs(x) >= 2 * Math.abs(y)) {
         action = ACTION_LEFTRIGHT;
     } else {
         action = ACTION_IGNORE;
@@ -1464,6 +1689,27 @@ var fit_current = () => {
     updateChart();
 };
 
+var set_y_low = document.getElementById('y-range-1');
+var set_y_high = document.getElementById('y-range-2');
+var set_y_range = () =>{
+    var low = parseFloat(set_y_low.value);
+    var high = parseFloat(set_y_high.value);
+    if(Number.isNaN(low) || Number.isNaN(high) || low >= high) {
+        return;
+    }
+    prev_y_max = high;
+    prev_y_min = low;
+    if(lock_y_checkbox.checked){
+        // don't need to do anything
+    }else {
+        lock_y_checkbox.checked = true;
+        lock_y_change_callback();
+    }
+    prev_y_max = high;
+    prev_y_min = low;
+    updateChart();
+};
+
 var lock_y_checkbox = document.getElementById('lock-y');
 
 var lock_y_change_callback = () => {
@@ -1512,7 +1758,87 @@ var reverse_mouse = () => {
         reverse_mouse_element.innerHTML = "Unreverse mouse wheel";
     }
 }
-</script>
+
+var slider_element = document.getElementById('slider-button');
+var slider_wrapper = document.getElementById('slider-wrapper');
+
+
+
+slider_element.addEventListener('mousedown', () => {
+    // console.log("Mouse down");
+    slider_active = true;
+});
+
+window.addEventListener('mouseup', () => {
+    // console.log("Mouse up");
+    slider_active = false;
+});
+
+window.addEventListener('mousemove', () => {
+    if(slider_active === false) {
+        return;
+    }
+    var wrapper_range = slider_wrapper.getBoundingClientRect();
+    var slider_range = slider_element.getBoundingClientRect();
+    // var bar_width = wrapper_range.width;
+    var bar_height = wrapper_range.height;
+    var bar_left = wrapper_range.left;
+    var bar_right = wrapper_range.right;
+    var valid_left = bar_left + 0.5 * bar_height;
+    var valid_right = bar_right - 0.5 * bar_height;
+    // console.log(`left: ${valid_left}, right: ${valid_right}`);
+    var mouse_x = precise_mouse_x;
+    if(mouse_x === -1) {
+        // for safari
+        mouse_x = mouseX;
+        console.log("Safari");
+    }
+    var ratio = (mouse_x - valid_left) / (valid_right - valid_left);
+    if(ratio < 0) {
+        ratio = 0;
+    }
+    if(ratio > 1) {
+        ratio = 1;
+    }
+    slider_element.style.setProperty('--line-width-ratio', ratio);
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio-0.5));
+    update_line_width_only(new_line_width);
+    // var slider_center = slider_range.left + 0.5 * slider_range.width;
+    // console.log(`Valid left: ${valid_left}, Slider center: ${slider_center}`);
+    // console.log(`Valid right: ${valid_right}, Slider center: ${slider_center}`);
+});
+
+var reset_line_width= ()=> {
+    slider_element.style.setProperty('--line-width-ratio', 0.5);
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
+    update_line_width_only(new_line_width);
+}
+
+var pricise_mouse_event_listener = (event) => {
+    // 使用 getCoalescedEvents 获取高精度的鼠标位置
+    var coalescedEvents;
+    try {
+        coalescedEvents = event.getCoalescedEvents();
+    }catch (e) {
+        document.removeEventListener('pointermove', pricise_mouse_event_listener);
+    }
+    for (const coalescedEvent of coalescedEvents) {
+        const x = coalescedEvent.clientX;
+        const y = coalescedEvent.clientY;
+        precise_mouse_x = x;
+    }
+};
+
+document.addEventListener('pointermove', pricise_mouse_event_listener);
+
+var debug_checkbox_element = document.getElementById('debug-mode');
+debug_checkbox_element.addEventListener('change', () => {
+    if(debug_checkbox_element.checked) {
+        document.getElementById('debug-info').style.display = 'block';
+    } else {
+        document.getElementById('debug-info').style.display = 'none';
+    }
+});</script>
 </body>
 
 </html>

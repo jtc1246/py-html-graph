@@ -449,7 +449,7 @@ function handle_wheel(event) {
     }
     var y = event.deltaY;
     var x = event.deltaX;
-    // Currently will not implement this (distinguish whether it is mouse or trackpad, reverse
+    // Currently will not implement this (distinguish whether it is mouse or touchpad, reverse
     // the direction if it is mouse), the following method works on mac, but not works on linux.
     // var tmptmp = Math.abs(y) % 1;
     // if(tmptmp >0.0001 && tmptmp < 0.9999) {
@@ -464,9 +464,9 @@ function handle_wheel(event) {
         action = ACTION_LEFTRIGHT;
     } else if (x === 0) {
         action = ACTION_UPDOWN;
-    } else if (Math.abs(y) >= 3 * Math.abs(x)) {
+    } else if (Math.abs(y) >= 2 * Math.abs(x)) {
         action = ACTION_UPDOWN;
-    } else if (Math.abs(x) >= 3 * Math.abs(y)) {
+    } else if (Math.abs(x) >= 2 * Math.abs(y)) {
         action = ACTION_LEFTRIGHT;
     } else {
         action = ACTION_IGNORE;
@@ -622,6 +622,27 @@ var fit_current = () => {
     updateChart();
 };
 
+var set_y_low = document.getElementById('y-range-1');
+var set_y_high = document.getElementById('y-range-2');
+var set_y_range = () =>{
+    var low = parseFloat(set_y_low.value);
+    var high = parseFloat(set_y_high.value);
+    if(Number.isNaN(low) || Number.isNaN(high) || low >= high) {
+        return;
+    }
+    prev_y_max = high;
+    prev_y_min = low;
+    if(lock_y_checkbox.checked){
+        // don't need to do anything
+    }else {
+        lock_y_checkbox.checked = true;
+        lock_y_change_callback();
+    }
+    prev_y_max = high;
+    prev_y_min = low;
+    updateChart();
+};
+
 var lock_y_checkbox = document.getElementById('lock-y');
 
 var lock_y_change_callback = () => {
@@ -742,3 +763,12 @@ var pricise_mouse_event_listener = (event) => {
 };
 
 document.addEventListener('pointermove', pricise_mouse_event_listener);
+
+var debug_checkbox_element = document.getElementById('debug-mode');
+debug_checkbox_element.addEventListener('change', () => {
+    if(debug_checkbox_element.checked) {
+        document.getElementById('debug-info').style.display = 'block';
+    } else {
+        document.getElementById('debug-info').style.display = 'none';
+    }
+});

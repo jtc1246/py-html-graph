@@ -573,7 +573,7 @@
     border: 0.1vw solid #5088f0;
     margin-top: -0.275vw;
     /* 这里可滑动的长度是 7.7vw, 滑动时只要更新 ratio 就行 */
-    margin-left: calc(-0.275vw + 7.7vw * var(--line-width-ratio, 0.3333));
+    margin-left: calc(-0.275vw + 7.7vw * var(--line-width-ratio, 0.5));
     /* box-shadow: 0 0 0.5vw rgba(52, 120, 246, 0.5); */
     /* box-shadow: 0 0 0.5vw rgba(0, 0, 0, 0.3); */
 }

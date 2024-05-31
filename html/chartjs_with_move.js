@@ -75,6 +75,7 @@ var current_min = Number.MAX_VALUE;
 var prev_y_max = null;
 var prev_y_min = null;
 var graph_locked = false;
+var latest_line_width = 0;
 
 const numWorkers = 10;
 const workers = [];
@@ -300,6 +301,8 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
     return Math.round(num - tmp + multiple + remainder);
 };
 
+var prev_config = null;
+
 
 function createChart() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
@@ -312,6 +315,9 @@ function createChart() {
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     current_min = Number.MAX_VALUE;
     current_max = Number.MIN_VALUE;
+    if(latest_line_width === 0){
+        latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
+    }
     const config = {
         type: 'line',
         data: {
@@ -320,7 +326,7 @@ function createChart() {
                 ...dataset,
                 data: slice(dataset.data, start, end_plus_one, step),
                 pointRadius: 0,
-                borderWidth: document.querySelector('main').clientWidth / 300 * 28 / 100,
+                borderWidth: latest_line_width,
                 tension: 0,
                 borderJoinStyle: 'round'
             }))
@@ -356,6 +362,7 @@ function createChart() {
             }
         }
     };
+    prev_config = config;
     fit_y_current = false;
     var chart_y_min = config.options.scales.y.min;
     var chart_y_max = config.options.scales.y.max;
@@ -365,6 +372,36 @@ function createChart() {
     set_y_value(chart_y_min, chart_y_max);
     return new Chart(ctx, config);
 }
+
+var update_line_width_only = (new_width) => {
+    latest_line_width = new_width;
+    prev_config.data.datasets.forEach((dataset) => {
+        dataset.borderWidth = new_width;
+    });
+    myChart.destroy();
+    myChart = new Chart(ctx, prev_config);
+    var time = performance.now() - t;
+    if (time > 500) {
+        t = performance.now();
+        return;
+    }
+    fps_datas.push(time);
+    if (fps_datas.length > 10) {
+        fps_datas.shift();
+    }
+    if (performance.now() - last_update_time > 150) {
+        last_update_time = performance.now();
+        var sum = 0;
+        for (var i = 0; i < fps_datas.length; i++) {
+            sum += fps_datas[i];
+        }
+        time = sum / fps_datas.length;
+        var fps = 1000 / time;
+        var e = document.getElementById("fps");
+        e.innerHTML = `FPS: ${fps.toFixed(2)}`;
+    }
+    t = performance.now();
+};
 
 
 // Function to update the chart view window by recreating the chart
@@ -676,10 +713,18 @@ window.addEventListener('mousemove', () => {
         ratio = 1;
     }
     slider_element.style.setProperty('--line-width-ratio', ratio);
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio-0.5));
+    update_line_width_only(new_line_width);
     // var slider_center = slider_range.left + 0.5 * slider_range.width;
     // console.log(`Valid left: ${valid_left}, Slider center: ${slider_center}`);
     // console.log(`Valid right: ${valid_right}, Slider center: ${slider_center}`);
 });
+
+var reset_line_width= ()=> {
+    slider_element.style.setProperty('--line-width-ratio', 0.5);
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
+    update_line_width_only(new_line_width);
+}
 
 var pricise_mouse_event_listener = (event) => {
     // 使用 getCoalescedEvents 获取高精度的鼠标位置

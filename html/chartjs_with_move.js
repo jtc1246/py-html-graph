@@ -804,3 +804,41 @@ data_points_input.addEventListener('focusout', () => {
     }
     updateChart();
 });
+
+// document.addEventListener('')
+
+function stringToHex(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    let hex = '';
+    for (let byte of bytes) {
+        hex += byte.toString(16).padStart(2, '0');
+    }
+    return hex;
+}
+
+var remote_print = (msg) => {
+    var request = new XMLHttpRequest();
+    msg = stringToHex(msg);
+    var url = '/msg/' + msg;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.send();
+}
+
+// remote_print("Test message");
+// console.log("Test message");
+document.addEventListener('touchstart', ()=>{
+    // console.log("Touch start");
+    remote_print("Touch start");
+});
+
+document.addEventListener('touchend', ()=>{
+    // console.log("Touch end");
+    remote_print("Touch end");
+});
+
+document.addEventListener('touchmove', ()=>{
+    // console.log("Touch move");
+    remote_print("Touch move");
+});

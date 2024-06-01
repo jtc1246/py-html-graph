@@ -6,6 +6,8 @@ from time import sleep
 from myBasics import strToBase64
 import sys
 import os
+from mySecrets import hexToStr
+from threading import Lock
 
 if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
     with open('./html/chartjs_with_move.html', 'r') as f:
@@ -36,10 +38,19 @@ if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
         f.write(html)
     os._exit(0)
 
+print_lock = Lock()
 
 class Request(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
+        if(path.startswith('/msg/')):
+            msg = path[5:]
+            with print_lock:
+                print(hexToStr(msg))
+            self.send_response(200)
+            self.send_header('Content-Length', 0)
+            self.end_headers()
+            return
         if (path not in ['/', '/index.html']):
             print(404)
             self.send_response(404)

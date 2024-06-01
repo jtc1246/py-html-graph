@@ -24,6 +24,7 @@
     flex-flow: nowrap;
     vertical-align: top;
     caret-color: #000;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* To disable the behavior in specific status */

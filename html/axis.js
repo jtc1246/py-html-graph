@@ -173,8 +173,8 @@ var to_scientific = () => {
 
 var y_digits_input = document.getElementById('y-digits');
 y_digits_input.addEventListener('input', () => {
-    console.log('y_digits_input changed');
-    console.log(y_digits_input.value);
+    // console.log('y_digits_input changed');
+    // console.log(y_digits_input.value);
     update_y_value();
 });
 
@@ -284,13 +284,13 @@ var set_x_value = () => {
     latest_x_interval_for_encoding_only = Math.round(interval / 1000);
     document.getElementById('x-left-value').innerHTML = encode_unix_ms(min) + '<br>';
     document.getElementById('x-right-value').innerHTML = encode_unix_ms(max) + '<br>';
-    console.log(`interval: ${interval}`);
+    // console.log(`interval: ${interval}`);
     // var start = Math.floor(min / interval) * interval;
     // var end = Math.ceil(max / interval) * interval;
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
-    console.log(`start: ${start}`);
-    console.log(`end: ${end}`);
+    // console.log(`start: ${start}`);
+    // console.log(`end: ${end}`);
     var num = (max - min) / interval;
     if (start * interval - min < interval * 0.5) {
         start += 1

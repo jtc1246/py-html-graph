@@ -56,6 +56,7 @@
     flex-flow: nowrap;
     vertical-align: top;
     caret-color: #000;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* To disable the behavior in specific status */
@@ -920,6 +921,7 @@ html {
             <div id="downleft">
                 <div id="downleft-corner"></div>
             </div>
+            <div id="labels"></div>
             <div id="x">
                 <div id="x-line"></div>
                 <div id="x-left-scale" class="x-scale"></div>
@@ -1083,14 +1085,14 @@ var get_chart_height_in_vw = () => {
 };
 
 var encode_value = (num) => {
-    if(y_type === Y_TYPE_UNSELECTED){
+    if (y_type === Y_TYPE_UNSELECTED) {
         return num.toFixed(2);
     }
-    if(y_type === Y_TYPE_DECIMAL){
+    if (y_type === Y_TYPE_DECIMAL) {
         return num.toFixed(y_dec_digits);
     }
-    if(y_type === Y_TYPE_SCIENTIFIC){
-        return num.toExponential(y_sci_digits-1).replace('+', '');
+    if (y_type === Y_TYPE_SCIENTIFIC) {
+        return num.toExponential(y_sci_digits - 1).replace('+', '');
     }
 };
 
@@ -1098,8 +1100,8 @@ var set_y_value = (min, max) => {
     // document.getElementById('y-top-value').innerHTML = max.toFixed(2);
     // document.getElementById('y-bottom-value').innerHTML = min.toFixed(2);
     // or it will be completely continuous, no space
-    document.getElementById('y-top-value').innerHTML = encode_value(max)+'<br>';
-    document.getElementById('y-bottom-value').innerHTML = encode_value(min)+'<br>';
+    document.getElementById('y-top-value').innerHTML = encode_value(max) + '<br>';
+    document.getElementById('y-bottom-value').innerHTML = encode_value(min) + '<br>';
     var interval = calc_y_interval(min, max);
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
@@ -1136,7 +1138,7 @@ var set_y_value = (min, max) => {
         scale_element.style.top = `${distance_to_top}vw`;
         value_element.style.top = `${distance_to_top + offset}vw`;
         // value_element.innerHTML = value.toFixed(2);
-        value_element.innerHTML = encode_value(value)+'<br>';
+        value_element.innerHTML = encode_value(value) + '<br>';
         y_axis.appendChild(value_element);
         y_axis.appendChild(scale_element);
     }
@@ -1161,40 +1163,40 @@ function toScientificNotation(num) {
 }
 
 var update_y_value = () => {
-    if(y_type === Y_TYPE_UNSELECTED){
+    if (y_type === Y_TYPE_UNSELECTED) {
         return;
     }
-    if(y_digits_input.value.length === 0){
+    if (y_digits_input.value.length === 0) {
         return;
     }
     var digits = Number(y_digits_input.value);
-    if(Number.isNaN(digits)){
+    if (Number.isNaN(digits)) {
         return;
     }
     digits = Math.round(digits);
-    if(y_type === Y_TYPE_SCIENTIFIC){
-        y_sci_digits = digits+1;
+    if (y_type === Y_TYPE_SCIENTIFIC) {
+        y_sci_digits = digits + 1;
     }
-    if(y_type === Y_TYPE_DECIMAL){
+    if (y_type === Y_TYPE_DECIMAL) {
         y_dec_digits = digits;
     }
     set_y_value(y_range_prev_min, y_range_prev_max);
 };
 
-var to_decimal = () =>{
+var to_decimal = () => {
     y_type = Y_TYPE_DECIMAL;
     update_y_value();
 };
 
-var to_scientific = () =>{
+var to_scientific = () => {
     y_type = Y_TYPE_SCIENTIFIC;
     update_y_value();
 };
 
 var y_digits_input = document.getElementById('y-digits');
-y_digits_input.addEventListener('input',()=>{
-    console.log('y_digits_input changed');
-    console.log(y_digits_input.value);
+y_digits_input.addEventListener('input', () => {
+    // console.log('y_digits_input changed');
+    // console.log(y_digits_input.value);
     update_y_value();
 });
 
@@ -1205,10 +1207,10 @@ const X_STEP_MS = 5000;
 const LEVEL_S = [
     1, 2, 3, 5, 10, 15, 20, 30,
     60, 120, 180, 300, 600, 900, 1200, 1800,
-    3600, 3600*2, 3600*3, 3600*4, 3600*6, 3600*8, 3600*12,
-    86400, 86400*2, 86400*3, 86400*5, 86400*10, 86400*15, 86400*30,
-    86400*60, 86400*91, 86400*122, 86400*183, 86400*365,
-    86400*365*2, 86400*(365*3+1), 86400*(365*5+1), 86400*(365*10+2)
+    3600, 3600 * 2, 3600 * 3, 3600 * 4, 3600 * 6, 3600 * 8, 3600 * 12,
+    86400, 86400 * 2, 86400 * 3, 86400 * 5, 86400 * 10, 86400 * 15, 86400 * 30,
+    86400 * 60, 86400 * 91, 86400 * 122, 86400 * 183, 86400 * 365,
+    86400 * 365 * 2, 86400 * (365 * 3 + 1), 86400 * (365 * 5 + 1), 86400 * (365 * 10 + 2)
 ];
 const IDEAL_INTERVAL_NUM = 9;
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -1232,18 +1234,18 @@ var find_interval = (diff) => {
     diff = diff / 1000;
     var l = LEVEL_S.length;
     var prev_interval_num = 10000000;
-    for (var i=0; i<l; i++){
+    for (var i = 0; i < l; i++) {
         var interval_num = diff / LEVEL_S[i];
-        if(interval_num < IDEAL_INTERVAL_NUM){
-            if(interval_num+prev_interval_num<2*IDEAL_INTERVAL_NUM){
-                return LEVEL_S[i-1];
+        if (interval_num < IDEAL_INTERVAL_NUM) {
+            if (interval_num + prev_interval_num < 2 * IDEAL_INTERVAL_NUM) {
+                return LEVEL_S[i - 1];
             } else {
                 return LEVEL_S[i];
             }
         }
         prev_interval_num = interval_num;
     }
-    return LEVEL_S[l-1];
+    return LEVEL_S[l - 1];
 };
 
 var delete_x_values_scales = () => {
@@ -1257,7 +1259,7 @@ var delete_x_values_scales = () => {
 };
 
 var encode_unix_ms = (num) => {
-    num = Math.round(num/1000)*1000;
+    num = Math.round(num / 1000) * 1000;
     // if(x_relative){
     //     num = num - START_UNIX_MS;
     // }
@@ -1270,47 +1272,47 @@ var encode_unix_ms = (num) => {
     const seconds = date.getUTCSeconds();   // 获取秒
     var line1 = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     var line2 = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    if(x_relative){
-        line1 = Math.floor(num/1000/86400)+'d';
+    if (x_relative) {
+        line1 = Math.floor(num / 1000 / 86400) + 'd';
     }
     // var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     var time_str = '';
-    if(latest_x_interval_for_encoding_only <= 6*3600){
+    if (latest_x_interval_for_encoding_only <= 6 * 3600) {
         time_str = line2 + '&nbsp;<br class="no-select">' + line1;
     } else {
         time_str = line1 + '&nbsp;<br class="no-select">' + line2;
     }
-    if(x_relative){
-        date = new Date(num+START_UNIX_MS);
+    if (x_relative) {
+        date = new Date(num + START_UNIX_MS);
     }
     const week = WEEK_DAYS[date.getUTCDay()];
-    if(show_x_week){
+    if (show_x_week) {
         time_str += `&nbsp;<br class="no-select">${week}`;
     }
     return time_str;
 };
 
-var set_x_value = () =>{
+var set_x_value = () => {
     var min = currentIndex * X_STEP_MS + START_UNIX_MS;
-    var max = (currentIndex+fake_window_size) * X_STEP_MS + START_UNIX_MS;
-    if(x_relative){
+    var max = (currentIndex + fake_window_size) * X_STEP_MS + START_UNIX_MS;
+    if (x_relative) {
         min -= START_UNIX_MS;
         max -= START_UNIX_MS;
     }
     // document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
     // document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
     var diff = max - min;
-    var interval = find_interval(diff)*1000;
-    latest_x_interval_for_encoding_only = Math.round(interval/1000);
-    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
-    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
-    console.log(`interval: ${interval}`);
+    var interval = find_interval(diff) * 1000;
+    latest_x_interval_for_encoding_only = Math.round(interval / 1000);
+    document.getElementById('x-left-value').innerHTML = encode_unix_ms(min) + '<br>';
+    document.getElementById('x-right-value').innerHTML = encode_unix_ms(max) + '<br>';
+    // console.log(`interval: ${interval}`);
     // var start = Math.floor(min / interval) * interval;
     // var end = Math.ceil(max / interval) * interval;
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
-    console.log(`start: ${start}`);
-    console.log(`end: ${end}`);
+    // console.log(`start: ${start}`);
+    // console.log(`end: ${end}`);
     var num = (max - min) / interval;
     if (start * interval - min < interval * 0.5) {
         start += 1
@@ -1336,10 +1338,10 @@ var set_x_value = () =>{
         scale_element.classList.add('x-scale');
         value_element.classList.add('x-js');
         scale_element.classList.add('x-js');
-        scale_element.style.left = `${distance_to_left-0.1}vw`;
+        scale_element.style.left = `${distance_to_left - 0.1}vw`;
         value_element.style.left = `${distance_to_left}vw`;
         // value_element.innerHTML = value.toFixed(2);
-        value_element.innerHTML = encode_unix_ms(value)+'<br>';
+        value_element.innerHTML = encode_unix_ms(value) + '<br>';
         x_axis.appendChild(value_element);
         x_axis.appendChild(scale_element);
     }
@@ -1348,8 +1350,8 @@ var set_x_value = () =>{
 };
 
 var show_x_week_checkbox = document.getElementById('x-week');
-show_x_week_checkbox.addEventListener('change',()=>{
-    if(show_x_week_checkbox.checked){
+show_x_week_checkbox.addEventListener('change', () => {
+    if (show_x_week_checkbox.checked) {
         show_x_week = true;
     } else {
         show_x_week = false;
@@ -1358,8 +1360,8 @@ show_x_week_checkbox.addEventListener('change',()=>{
 });
 
 var x_relative_checkbox = document.getElementById('x-relative');
-x_relative_checkbox.addEventListener('change',()=>{
-    if(x_relative_checkbox.checked){
+x_relative_checkbox.addEventListener('change', () => {
+    if (x_relative_checkbox.checked) {
         x_relative = true;
     } else {
         x_relative = false;
@@ -1372,12 +1374,12 @@ var copy_info = async () => {
     information += document.getElementById('title').innerHTML + '\n';
     information += document.getElementById('y-title').innerHTML + '\n';
     var y_values = document.getElementsByClassName('y-value');
-    for(var i=y_values.length-1; i>=0; i--){
+    for (var i = y_values.length - 1; i >= 0; i--) {
         information += y_values[i].innerHTML.replace('<br>', '\n');
     }
     var x_values = document.getElementsByClassName('x-value');
-    for(var i=0; i<x_values.length; i++){
-        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>','')+'\n';
+    for (var i = 0; i < x_values.length; i++) {
+        information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>', '') + '\n';
     }
     information += document.getElementById('x-title').innerHTML + '\n';
     await navigator.clipboard.writeText(information);
@@ -1433,7 +1435,7 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('wheel', (event) => {
-    if(event.deltaX !== 0) {
+    if (event.deltaX !== 0) {
         is_touchpad = true;
     }
 });
@@ -1561,12 +1563,12 @@ var get_y_max = () => {
 }
 
 var mouse_drag = (event) => {
-    if(is_touchpad || !mouse_pressed) {
+    if (is_touchpad || !mouse_pressed) {
         return;
     }
     var tmp = event.clientX;
     var moved = tmp - prev_mouse_loc;
-    if(moved === 0) {
+    if (moved === 0) {
         return;
     }
     event.preventDefault();
@@ -1699,7 +1701,7 @@ function createChart() {
     var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
     current_min = Number.MAX_VALUE;
     current_max = Number.MIN_VALUE;
-    if(latest_line_width === 0){
+    if (latest_line_width === 0) {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
     const config = {
@@ -2009,17 +2011,17 @@ var fit_current = () => {
 
 var set_y_low = document.getElementById('y-range-1');
 var set_y_high = document.getElementById('y-range-2');
-var set_y_range = () =>{
+var set_y_range = () => {
     var low = parseFloat(set_y_low.value);
     var high = parseFloat(set_y_high.value);
-    if(Number.isNaN(low) || Number.isNaN(high) || low >= high) {
+    if (Number.isNaN(low) || Number.isNaN(high) || low >= high) {
         return;
     }
     prev_y_max = high;
     prev_y_min = low;
-    if(lock_y_checkbox.checked){
+    if (lock_y_checkbox.checked) {
         // don't need to do anything
-    }else {
+    } else {
         lock_y_checkbox.checked = true;
         lock_y_change_callback();
     }
@@ -2053,7 +2055,7 @@ var lock_y_change_callback = () => {
     // updateChart();
 };
 
-lock_y_checkbox.addEventListener('change',lock_y_change_callback);
+lock_y_checkbox.addEventListener('change', lock_y_change_callback);
 
 var lock_graph_checkbox = document.getElementById('lock-graph');
 lock_graph_checkbox.addEventListener('change', () => {
@@ -2068,7 +2070,7 @@ lock_graph_checkbox.addEventListener('change', () => {
 
 var reverse_mouse_element = document.getElementById('reverse-mouse');
 var reverse_mouse = () => {
-    if(reverse_mouse_direction) {
+    if (reverse_mouse_direction) {
         reverse_mouse_direction = false;
         reverse_mouse_element.innerHTML = "Reverse mouse wheel";
     } else {
@@ -2093,7 +2095,7 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('mousemove', () => {
-    if(slider_active === false) {
+    if (slider_active === false) {
         return;
     }
     var wrapper_range = slider_wrapper.getBoundingClientRect();
@@ -2106,27 +2108,27 @@ window.addEventListener('mousemove', () => {
     var valid_right = bar_right - 0.5 * bar_height;
     // console.log(`left: ${valid_left}, right: ${valid_right}`);
     var mouse_x = precise_mouse_x;
-    if(mouse_x === -1) {
+    if (mouse_x === -1) {
         // for safari
         mouse_x = mouseX;
         console.log("Safari");
     }
     var ratio = (mouse_x - valid_left) / (valid_right - valid_left);
-    if(ratio < 0) {
+    if (ratio < 0) {
         ratio = 0;
     }
-    if(ratio > 1) {
+    if (ratio > 1) {
         ratio = 1;
     }
     slider_element.style.setProperty('--line-width-ratio', ratio);
-    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio-0.5));
+    var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio - 0.5));
     update_line_width_only(new_line_width);
     // var slider_center = slider_range.left + 0.5 * slider_range.width;
     // console.log(`Valid left: ${valid_left}, Slider center: ${slider_center}`);
     // console.log(`Valid right: ${valid_right}, Slider center: ${slider_center}`);
 });
 
-var reset_line_width= ()=> {
+var reset_line_width = () => {
     slider_element.style.setProperty('--line-width-ratio', 0.5);
     var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     update_line_width_only(new_line_width);
@@ -2137,7 +2139,7 @@ var pricise_mouse_event_listener = (event) => {
     var coalescedEvents;
     try {
         coalescedEvents = event.getCoalescedEvents();
-    }catch (e) {
+    } catch (e) {
         document.removeEventListener('pointermove', pricise_mouse_event_listener);
     }
     for (const coalescedEvent of coalescedEvents) {
@@ -2151,7 +2153,7 @@ document.addEventListener('pointermove', pricise_mouse_event_listener);
 
 var debug_checkbox_element = document.getElementById('debug-mode');
 debug_checkbox_element.addEventListener('change', () => {
-    if(debug_checkbox_element.checked) {
+    if (debug_checkbox_element.checked) {
         document.getElementById('debug-info').style.display = 'block';
     } else {
         document.getElementById('debug-info').style.display = 'none';
@@ -2160,26 +2162,26 @@ debug_checkbox_element.addEventListener('change', () => {
 
 var data_points_input = document.getElementById('data-points-input');
 var data_points_text = document.querySelector('#y-digits-text.data-points-after');
-data_points_input.addEventListener('input', ()=> {
+data_points_input.addEventListener('input', () => {
     var value = data_points_input.value;
     value = parseInt(value);
-    if(Number.isNaN(value) || value <50 || value > 5000) {
+    if (Number.isNaN(value) || value < 50 || value > 5000) {
         data_points_text.innerHTML = "&nbsp;Invalid";
         data_points_text.style.color = "red";
         return;
     }
-    data_points_text.innerHTML = '~ '+value*2;
+    data_points_text.innerHTML = '~ ' + value * 2;
     data_points_text.style.color = "#aaa";
 });
 
-data_points_input.addEventListener('focusout', ()=>{
+data_points_input.addEventListener('focusout', () => {
     var value = data_points_input.value;
     value = parseInt(value);
-    if(Number.isNaN(value) || value <50 || value > 5000) {
+    if (Number.isNaN(value) || value < 50 || value > 5000) {
         return;
     }
     data_points_text.style.color = "#666";
-    window_max = value*2;
+    window_max = value * 2;
     level = 0;
     viewWindow = fake_window_size;
     while (viewWindow > window_max) {
@@ -2187,6 +2189,44 @@ data_points_input.addEventListener('focusout', ()=>{
         level++;
     }
     updateChart();
+});
+
+// document.addEventListener('')
+
+function stringToHex(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    let hex = '';
+    for (let byte of bytes) {
+        hex += byte.toString(16).padStart(2, '0');
+    }
+    return hex;
+}
+
+var remote_print = (msg) => {
+    var request = new XMLHttpRequest();
+    msg = stringToHex(msg);
+    var url = '/msg/' + msg;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.send();
+}
+
+// remote_print("Test message");
+// console.log("Test message");
+document.addEventListener('touchstart', ()=>{
+    // console.log("Touch start");
+    remote_print("Touch start");
+});
+
+document.addEventListener('touchend', ()=>{
+    // console.log("Touch end");
+    remote_print("Touch end");
+});
+
+document.addEventListener('touchmove', ()=>{
+    // console.log("Touch move");
+    remote_print("Touch move");
 });</script>
 </body>
 

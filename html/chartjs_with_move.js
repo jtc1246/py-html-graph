@@ -76,6 +76,7 @@ var prev_y_max = null;
 var prev_y_min = null;
 var graph_locked = false;
 var latest_line_width = 0;
+var previous_window_width = document.querySelector('main').clientWidth;
 
 const numWorkers = 10;
 const workers = [];
@@ -191,6 +192,14 @@ var mouse_drag = (event) => {
     handle_x_drag(-moved);
 };
 
+var window_resize = () => {
+    console.log(`previous_window_width: ${previous_window_width}, new width: ${document.querySelector('main').clientWidth}`);
+    var new_window_width = document.querySelector('main').clientWidth;
+    var new_width = latest_line_width / previous_window_width * document.querySelector('main').clientWidth;
+    previous_window_width = new_window_width;
+    update_line_width_only(new_width);
+};
+
 createData().then((dataSets) => {
     data = {
         labels: Array.from({ length: totalDataPoints }, (_, i) => i),
@@ -206,8 +215,9 @@ createData().then((dataSets) => {
     document.querySelector('body').style.display = 'block';
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
-    window.addEventListener('resize', updateChart);
+    window.addEventListener('resize', window_resize);
     title_element.style.lineHeight = title_element.clientHeight + "px";
+    previous_window_width = document.querySelector('main').clientWidth;
     element.addEventListener('mousedown', (event) => {
         mouse_pressed = true;
         prev_mouse_loc = event.clientX;

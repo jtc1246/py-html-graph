@@ -352,7 +352,8 @@ var copy_info = async () => {
     information += document.getElementById('title').innerHTML + '\n';
     information += document.getElementById('y-title').innerHTML + '\n';
     var y_values = document.getElementsByClassName('y-value');
-    for (var i = y_values.length - 1; i >= 0; i--) {
+    // for (var i = y_values.length - 1; i >= 0; i--) {
+    for (var i = 0; i < y_values.length; i++) {
         information += y_values[i].innerHTML.replace('<br>', '\n');
     }
     var x_values = document.getElementsByClassName('x-value');

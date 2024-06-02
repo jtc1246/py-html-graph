@@ -2,14 +2,6 @@ const ACTION_IGNORE = 10000001;
 const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;
 
-const BASE64_CODE = '$workerb64$';
-var worker_url;
-
-if (BASE64_CODE.length <= 1000) {
-    worker_url = 'data_worker.js';
-} else {
-    worker_url = 'data:application/javascript;base64,' + BASE64_CODE;
-}
 
 var t = 0;
 const chart_element = document.getElementById('myChart');

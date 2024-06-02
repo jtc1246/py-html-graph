@@ -24,16 +24,16 @@ if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
         stylejs = f.read()
     with open('./html/axis.js', 'r') as f:
         axisjs = f.read()
-    with open('./html/data_worker.js', 'r') as f:
-        worker = f.read()
-    worker = strToBase64(worker)
+    # with open('./html/data_worker.js', 'r') as f:
+    #     worker = f.read()
+    # worker = strToBase64(worker)
     html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
     html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
     html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
     html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
     html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
     html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
-    html = html.replace("'$workerb64$'", f"'{worker}'")
+    # html = html.replace("'$workerb64$'", f"'{worker}'")
     with open('./html/index.html', 'w') as f:
         f.write(html)
     os._exit(0)
@@ -93,16 +93,16 @@ class Request(BaseHTTPRequestHandler):
             stylejs = f.read()
         with open('./html/axis.js', 'r') as f:
             axisjs = f.read()
-        with open('./html/data_worker.js', 'r') as f:
-            worker = f.read()
-        worker = strToBase64(worker)
+        # with open('./html/data_worker.js', 'r') as f:
+        #     worker = f.read()
+        # worker = strToBase64(worker)
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
         html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
         html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
         html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
         html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
         html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
-        html = html.replace("'$workerb64$'", f"'{worker}'")
+        # html = html.replace("'$workerb64$'", f"'{worker}'")
         html = html.encode('utf-8')
         self.send_header('Content-Length', len(html))
         self.end_headers()

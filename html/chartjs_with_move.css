@@ -15,7 +15,7 @@
     width: 100%;
     height: 40vw;
     display: grid;
-    grid-template-columns: 4.7619vw 85.2381vw 10vw;
+    grid-template-columns: 4.7619vw calc(95.2381vw - var(--labels-width-vw, 10)*1vw) calc(var(--labels-width-vw, 10)*1vw);
     grid-template-rows: 2.5vw 1fr 4vw;
     justify-content: center;
     align-items: center;

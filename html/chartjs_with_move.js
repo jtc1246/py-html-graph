@@ -17,6 +17,13 @@ const ctx = document.getElementById('myChart').getContext('2d');
 var debug_element = document.getElementById('debug');
 var debug2_element = document.getElementById('debug2');
 
+const VARIABLE_NUM = 10;
+const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i + 1}`);
+VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = 'Name 12';
+VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
+const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
+const LABEL_COLORS = [] // add later
+
 // Generate sample data
 const totalDataPoints = 500000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
@@ -62,7 +69,7 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
-document.querySelector('body').style.display = 'none';
+// document.querySelector('body').style.display = 'none';
 
 var data;
 var global_max = Number.MIN_VALUE;
@@ -78,12 +85,71 @@ var graph_locked = false;
 var latest_line_width = 0;
 var previous_window_width = document.querySelector('main').clientWidth;
 
-const numWorkers = 10;
+const numWorkers = VARIABLE_NUM;
 const workers = [];
 const dataSets = new Array(numWorkers).fill(null);
 let completedWorkers = 0;
 var all_finished = false;
 var generating_start_time = performance.now();
+
+var create_label_callback = (index) => {
+    var tmp = index;
+    var callback = () => {
+        var element = document.getElementById(`label-checkbox-${tmp}`);
+        if (element.checked) {
+            VARIABLE_SHOW[tmp] = true;
+            console.log(`Variable ${tmp + 1} is shown`);
+        } else {
+            VARIABLE_SHOW[tmp] = false;
+            console.log(`Variable ${tmp + 1} is hidden`);
+        }
+    };
+    return callback;
+};
+
+var set_labels = () => {
+    var label_container = document.getElementById('labels');
+    var max_width = 0;
+    var graph_height = chart_element.clientHeight;
+    var window_width_2 = document.querySelector('main').clientWidth;
+    var graph_height_vw = graph_height / window_width_2 * 100;
+    var per_label_height = graph_height_vw / VARIABLE_NUM;
+    if(per_label_height > 2){
+        per_label_height = 2;
+    }
+    if(per_label_height < 1.34){
+        per_label_height = 1.34;
+    }
+    for (var i = 0;i<VARIABLE_NUM;i++){
+        var this_label = document.createElement('div');
+        this_label.classList.add('label');
+        this_label.style.height = per_label_height + 'vw';
+        var label_input = document.createElement('input');
+        label_input.type = 'checkbox';
+        label_input.checked = 'true';
+        label_input.id = `label-checkbox-${i}`;
+        label_input.addEventListener('change', create_label_callback(i));
+        this_label.appendChild(label_input);
+        var color_line = document.createElement('div');
+        color_line.classList.add('line-color');
+        this_label.appendChild(color_line);
+        var label_text = document.createElement('p');
+        label_text.innerHTML = VARIABLE_NAMES[i];
+        this_label.appendChild(label_text);
+        label_container.appendChild(this_label);
+        var this_width = label_text.getBoundingClientRect().width;
+        if (this_width > max_width) {
+            max_width = this_width;
+        }
+    }
+    var window_width = document.querySelector('main').clientWidth;
+    var max_width_in_vw = max_width / window_width * 100;
+    max_width_in_vw+=5;
+    document.getElementById('wrapper').style.setProperty('--labels-width-vw', max_width_in_vw);
+};
+
+set_labels();
+document.querySelector('body').style.display = 'none';
 
 // 创建一个函数来使用 Promise 等待所有 Worker 完成任务
 function createData() {
@@ -193,7 +259,7 @@ var mouse_drag = (event) => {
 };
 
 var window_resize = () => {
-    console.log(`previous_window_width: ${previous_window_width}, new width: ${document.querySelector('main').clientWidth}`);
+    // console.log(`previous_window_width: ${previous_window_width}, new width: ${document.querySelector('main').clientWidth}`);
     var new_window_width = document.querySelector('main').clientWidth;
     var new_width = latest_line_width / previous_window_width * document.querySelector('main').clientWidth;
     previous_window_width = new_window_width;

@@ -10,15 +10,15 @@ from mySecrets import hexToStr
 from threading import Lock
 
 if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
-    with open('./html/chartjs_with_move.html', 'r') as f:
+    with open('./html/main.html', 'r') as f:
         html = f.read()
     with open('./html/chart.js', 'r') as f:
         chartjs = f.read()
-    with open('./html/chartjs_with_move.js', 'r') as f:
+    with open('./html/main.js', 'r') as f:
         js = f.read()
     with open('./html/reset.css', 'r') as f:
         reset = f.read()
-    with open('./html/chartjs_with_move.css', 'r') as f:
+    with open('./html/main.css', 'r') as f:
         css = f.read()
     with open('./html/style.js', 'r') as f:
         stylejs = f.read()
@@ -28,9 +28,9 @@ if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
         worker = f.read()
     worker = strToBase64(worker)
     html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
-    html = html.replace('<script src="chartjs_with_move.js"></script>', f'<script>{js}</script>')
+    html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
     html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
-    html = html.replace('<link rel="stylesheet" href="chartjs_with_move.css">', f'<style>{css}</style>')
+    html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
     html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
     html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
     html = html.replace("'$workerb64$'", f"'{worker}'")
@@ -79,15 +79,15 @@ class Request(BaseHTTPRequestHandler):
         self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Connection', 'keep-alive')
-        with open('./html/chartjs_with_move.html', 'r') as f:
+        with open('./html/main.html', 'r') as f:
             html = f.read()
         with open('./html/chart.js', 'r') as f:
             chartjs = f.read()
-        with open('./html/chartjs_with_move.js', 'r') as f:
+        with open('./html/main.js', 'r') as f:
             js = f.read()
         with open('./html/reset.css', 'r') as f:
             reset = f.read()
-        with open('./html/chartjs_with_move.css', 'r') as f:
+        with open('./html/main.css', 'r') as f:
             css = f.read()
         with open('./html/style.js', 'r') as f:
             stylejs = f.read()
@@ -97,9 +97,9 @@ class Request(BaseHTTPRequestHandler):
             worker = f.read()
         worker = strToBase64(worker)
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
-        html = html.replace('<script src="chartjs_with_move.js"></script>', f'<script>{js}</script>')
+        html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
         html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
-        html = html.replace('<link rel="stylesheet" href="chartjs_with_move.css">', f'<style>{css}</style>')
+        html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
         html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
         html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
         html = html.replace("'$workerb64$'", f"'{worker}'")

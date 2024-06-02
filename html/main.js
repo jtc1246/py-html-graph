@@ -24,6 +24,12 @@ VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
 const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
 const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 
+const MODE_LOAD_ONCE = 12000001;
+const MODE_LOAD_DYNAMICALLY = 12000002;
+
+const data_loading_mode = MODE_LOAD_ONCE;
+const load_once_url = 'http://10.0.0.134:9012/data_10_5m'
+
 // Generate sample data
 const totalDataPoints = 5000000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
@@ -156,6 +162,7 @@ document.querySelector('body').style.display = 'none';
 
 // 创建一个函数来使用 Promise 等待所有 Worker 完成任务
 function createData() {
+    if(data_loading_mode === MODE_LOAD_ONCE){
     return new Promise((resolve) => {
         // for (let i = 0; i < numWorkers; i++) {
         //     const worker = new Worker(worker_url);
@@ -174,8 +181,8 @@ function createData() {
         //     worker.postMessage({ totalDataPoints: totalDataPoints, seed: index });
         // });
         var request = new XMLHttpRequest();
-        request.open('GET', 'http://127.0.0.1:9012/data_10_5m', true);
-        request.timeout = 5000;
+        request.open('GET', load_once_url, true);
+        request.timeout = 200000;
         request.responseType = 'arraybuffer';
         request.onerror = () => {
             console.log(' Request Error');
@@ -202,7 +209,7 @@ function createData() {
             resolve(dataSets);
         };
         request.send();
-    });
+    });}
 }
 
 var find_global_min_max = (data) => {

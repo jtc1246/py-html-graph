@@ -22,7 +22,7 @@ const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i 
 VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = '<div>';
 VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
 const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
-const LABEL_COLORS = [] // add later
+const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 
 // Generate sample data
 const totalDataPoints = 500000;
@@ -103,6 +103,8 @@ var create_label_callback = (index) => {
             VARIABLE_SHOW[tmp] = false;
             console.log(`Variable ${tmp + 1} is hidden`);
         }
+        myChart.destroy();
+        myChart = createChart_for_show_hide_variable();
     };
     return callback;
 };
@@ -132,6 +134,7 @@ var set_labels = () => {
         this_label.appendChild(label_input);
         var color_line = document.createElement('div');
         color_line.classList.add('line-color');
+        color_line.style.backgroundColor = LABEL_COLORS[i];
         this_label.appendChild(color_line);
         var label_text = document.createElement('p');
         label_text.textContent = VARIABLE_NAMES[i];
@@ -398,9 +401,11 @@ function createChart() {
         type: 'line',
         data: {
             labels: slice_no_min_max(data.labels, start, end_plus_one, step),
-            datasets: data.datasets.map(dataset => ({
+            datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
                 ...dataset,
                 data: slice(dataset.data, start, end_plus_one, step),
+                // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
                 pointRadius: 0,
                 borderWidth: latest_line_width,
                 tension: 0,
@@ -431,6 +436,78 @@ function createChart() {
                     // 设置 y
                     min: get_y_min(),
                     max: get_y_max()
+                }
+            },
+            interaction: {
+                mode: null  // 禁用鼠标悬停显示数据点信息
+            }
+        }
+    };
+    prev_config = config;
+    fit_y_current = false;
+    var chart_y_min = config.options.scales.y.min;
+    var chart_y_max = config.options.scales.y.max;
+    // console.log(`Current max: ${current_max}, Current min: ${current_min}`);
+    // document.getElementById('y-top-value').innerHTML = chart_y_max.toFixed(2);
+    // document.getElementById('y-bottom-value').innerHTML = chart_y_min.toFixed(2);
+    set_y_value(chart_y_min, chart_y_max);
+    set_x_value();
+    return new Chart(ctx, config);
+}
+
+function createChart_for_show_hide_variable() {
+    debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
+    var step = Math.pow(2, level);
+    var remainder = 0;
+    if (level !== 0) {
+        remainder = Math.pow(2, level - 1);
+    }
+    var start = fix_down_with_remainder(currentIndex, step, remainder);
+    var end_plus_one = fix_up_with_remainder(currentIndex + fake_window_size, step, remainder) + 1;
+    current_min = Number.MAX_VALUE;
+    current_max = Number.MIN_VALUE;
+    if (latest_line_width === 0) {
+        latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
+    }
+    const config = {
+        type: 'line',
+        data: {
+            labels: slice_no_min_max(data.labels, start, end_plus_one, step),
+            datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                ...dataset,
+                data: slice_no_min_max(dataset.data, start, end_plus_one, step),
+                // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
+                pointRadius: 0,
+                borderWidth: latest_line_width,
+                tension: 0,
+                borderJoinStyle: 'round'
+            }))
+        },
+        options: {
+            animation: false,
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false  // 不显示图例
+                },
+                tooltip: {
+                    enabled: false  // 关闭工具提示
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: (currentIndex),
+                    max: (currentIndex + fake_window_size),
+                    display: false
+                },
+                y: {
+                    display: false,
+                    // 设置 y
+                    min: prev_config.options.scales.y.min,
+                    max: prev_config.options.scales.y.max
                 }
             },
             interaction: {

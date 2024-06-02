@@ -19,7 +19,7 @@ var debug2_element = document.getElementById('debug2');
 
 const VARIABLE_NUM = 10;
 const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i + 1}`);
-VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = 'Name 12';
+VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = '<div>';
 VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
 const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
 const LABEL_COLORS = [] // add later
@@ -134,7 +134,7 @@ var set_labels = () => {
         color_line.classList.add('line-color');
         this_label.appendChild(color_line);
         var label_text = document.createElement('p');
-        label_text.innerHTML = VARIABLE_NAMES[i];
+        label_text.textContent = VARIABLE_NAMES[i];
         this_label.appendChild(label_text);
         label_container.appendChild(this_label);
         var this_width = label_text.getBoundingClientRect().width;

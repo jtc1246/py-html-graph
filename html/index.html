@@ -1467,13 +1467,16 @@ const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
 const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 
 const MODE_LOAD_ONCE = 12000001;
-const MODE_LOAD_DYNAMICALLY = 12000002;
+const MODE_LOAD_AT_UPDATE = 12000002;
+const MODE_PRELOAD_AND_CACHE = 12000003;
 
-const data_loading_mode = MODE_LOAD_ONCE;
-const load_once_url = 'http://10.0.0.134:9012/data_10_5m'
+const data_loading_mode = MODE_LOAD_AT_UPDATE;
+const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
+const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
+const preload_and_cache_base_url = '';
 
 // Generate sample data
-const totalDataPoints = 5000000;
+const totalDataPoints = 50000000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
 var window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
@@ -1606,22 +1609,6 @@ document.querySelector('body').style.display = 'none';
 function createData() {
     if(data_loading_mode === MODE_LOAD_ONCE){
     return new Promise((resolve) => {
-        // for (let i = 0; i < numWorkers; i++) {
-        //     const worker = new Worker(worker_url);
-        //     worker.onmessage = function (e) {
-        //         const { index, data } = e.data;
-        //         dataSets[index] = data;
-        //         completedWorkers++;
-        //         if (completedWorkers === numWorkers) {
-        //             resolve(dataSets);
-        //         }
-        //     };
-        //     workers.push(worker);
-        // }
-
-        // workers.forEach((worker, index) => {
-        //     worker.postMessage({ totalDataPoints: totalDataPoints, seed: index });
-        // });
         var request = new XMLHttpRequest();
         request.open('GET', load_once_url, true);
         request.timeout = 200000;
@@ -1652,6 +1639,23 @@ function createData() {
         };
         request.send();
     });}
+    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        return new Promise((resolve) => {
+            var request = new XMLHttpRequest();
+            request.open('GET', load_at_update_base_url+'/minmax', true);
+            request.onload = () => {
+                var b64data = request.responseText;
+                var data = base64ToArrayBuffer(b64data);
+                var view = new DataView(data);
+                global_min = view.getFloat32(0, false);
+                global_max = view.getFloat32(4, false);
+                console.log(`Global max: ${global_max}, Global min: ${global_min}`);
+                resolve(null);
+            };
+            request.send();
+            // resolve(null);
+        });
+    }
 }
 
 var find_global_min_max = (data) => {
@@ -1748,14 +1752,15 @@ var window_resize = () => {
 };
 
 createData().then((dataSets) => {
+    if(data_loading_mode === MODE_LOAD_ONCE){
     data = {
-        labels: Array.from({ length: totalDataPoints }, (_, i) => i),
+        // labels: Array.from({ length: totalDataPoints }, (_, i) => i),
         datasets: dataSets.map((data, i) => ({
-            label: `Variable ${i + 1}`,
+            // label: `Variable ${i + 1}`,
             data: data
         }))
     };
-    find_global_min_max(data.datasets);
+    find_global_min_max(data.datasets);}
     // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     all_finished = true;
     console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
@@ -1860,6 +1865,41 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
 
 var prev_config = null;
 
+function create_chartjs_x_values(start, end_plus_one, step) {
+    var result = [];
+    var origin_end_plus_one = end_plus_one;
+    if (end_plus_one > totalDataPoints) {
+        end_plus_one = totalDataPoints;
+    }
+    if (start >= 0) {
+        result.push(start);
+    } else {
+        result.push(0);
+    }
+    for (var i = start + step; i < end_plus_one; i += step) {
+        result.push(i);
+    }
+    var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
+    if (result.length < ideal_length) {
+        result.push(totalDataPoints-1);
+    }
+    return result;
+}
+
+function base64ToArrayBuffer(base64) {
+    // 解码 base64 字符串
+    const binaryString = atob(base64);
+
+    // 创建 Uint8Array 并填充数据
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // 将 Uint8Array 转换为 ArrayBuffer
+    return bytes.buffer;
+}
 
 function createChart() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
@@ -1875,10 +1915,12 @@ function createChart() {
     if (latest_line_width === 0) {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
-    const config = {
+    var config;
+    if(data_loading_mode === MODE_LOAD_ONCE){
+    config = {
         type: 'line',
         data: {
-            labels: slice_no_min_max(data.labels, start, end_plus_one, step),
+            labels: create_chartjs_x_values(start, end_plus_one, step),
             datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
                 ...dataset,
                 data: slice(dataset.data, start, end_plus_one, step),
@@ -1920,7 +1962,90 @@ function createChart() {
                 mode: null  // 禁用鼠标悬停显示数据点信息
             }
         }
-    };
+    };}
+    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        var json_data = {
+            start: start,
+            end: end_plus_one,
+            step: step
+        }
+        json_data = stringToHex(JSON.stringify(json_data));
+        url = load_at_update_base_url + '/' + json_data;
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        // request.responseType = 'arraybuffer';
+        var send_time = performance.now();
+        request.send();
+        console.log(request.status);
+        console.log(`Time to get data: ${performance.now() - send_time} ms`);
+        var response_data = request.responseText;
+        response_data = base64ToArrayBuffer(response_data);
+        // console.log(response_data.byteLength);
+        var view = new DataView(response_data);
+        var datasets = [];
+        var length = response_data.byteLength / VARIABLE_NUM / 4;
+        for (var i=0;i<VARIABLE_NUM;i++){
+            var list = [];
+            for(var j=0;j<length;j++){
+                var number = view.getFloat32(i*4*length+j*4, false);
+                list.push(number);
+                if(number > current_max && VARIABLE_SHOW[i]){
+                    current_max = number;
+                }
+                if(number < current_min && VARIABLE_SHOW[i]){
+                    current_min = number;
+                }
+            }
+            datasets.push(list);
+        }
+        // console.log(datasets);
+        // console.log(datasets[0])
+        config = {
+            type: 'line',
+            data: {
+                labels: create_chartjs_x_values(start, end_plus_one, step),
+                datasets: datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                    data: dataset,
+                    // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                    borderColor: LABEL_COLORS[datasets.indexOf(dataset)],
+                    pointRadius: 0,
+                    borderWidth: latest_line_width,
+                    tension: 0,
+                    borderJoinStyle: 'round'
+                }))
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // 不显示图例
+                    },
+                    tooltip: {
+                        enabled: false  // 关闭工具提示
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: (currentIndex),
+                        max: (currentIndex + fake_window_size),
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        // 设置 y
+                        min: get_y_min(),
+                        max: get_y_max()
+                    }
+                },
+                interaction: {
+                    mode: null  // 禁用鼠标悬停显示数据点信息
+                }
+            }
+        };
+    }
     prev_config = config;
     fit_y_current = false;
     var chart_y_min = config.options.scales.y.min;
@@ -1947,10 +2072,12 @@ function createChart_for_show_hide_variable() {
     if (latest_line_width === 0) {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
-    const config = {
+    var config;
+    if(data_loading_mode === MODE_LOAD_ONCE){
+    config = {
         type: 'line',
         data: {
-            labels: slice_no_min_max(data.labels, start, end_plus_one, step),
+            labels: create_chartjs_x_values(start, end_plus_one, step),
             datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
                 ...dataset,
                 data: slice_no_min_max(dataset.data, start, end_plus_one, step),
@@ -1992,7 +2119,82 @@ function createChart_for_show_hide_variable() {
                 mode: null  // 禁用鼠标悬停显示数据点信息
             }
         }
-    };
+    };}
+    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        var json_data = {
+            start: start,
+            end: end_plus_one,
+            step: step
+        }
+        json_data = stringToHex(JSON.stringify(json_data));
+        url = load_at_update_base_url + '/' + json_data;
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        // request.responseType = 'arraybuffer';
+        request.send();
+        console.log(request.status);
+        var response_data = request.responseText;
+        response_data = base64ToArrayBuffer(response_data);
+        // console.log(response_data.byteLength);
+        var view = new DataView(response_data);
+        var datasets = [];
+        var length = response_data.byteLength / VARIABLE_NUM / 4;
+        for (var i=0;i<VARIABLE_NUM;i++){
+            var list = [];
+            for(var j=0;j<length;j++){
+                var number = view.getFloat32(i*4*length+j*4, false);
+                list.push(number);
+            }
+            datasets.push(list);
+        }
+        // console.log(datasets);
+        // console.log(datasets[0])
+        config = {
+            type: 'line',
+            data: {
+                labels: create_chartjs_x_values(start, end_plus_one, step),
+                datasets: datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                    data: dataset,
+                    // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                    borderColor: LABEL_COLORS[datasets.indexOf(dataset)],
+                    pointRadius: 0,
+                    borderWidth: latest_line_width,
+                    tension: 0,
+                    borderJoinStyle: 'round'
+                }))
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // 不显示图例
+                    },
+                    tooltip: {
+                        enabled: false  // 关闭工具提示
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: (currentIndex),
+                        max: (currentIndex + fake_window_size),
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        // 设置 y
+                        min: prev_config.options.scales.y.min,
+                        max: prev_config.options.scales.y.max
+                    }
+                },
+                interaction: {
+                    mode: null  // 禁用鼠标悬停显示数据点信息
+                }
+            }
+        };
+    }
     prev_config = config;
     fit_y_current = false;
     var chart_y_min = config.options.scales.y.min;

@@ -125,13 +125,13 @@ var set_labels = () => {
     var window_width_2 = document.querySelector('main').clientWidth;
     var graph_height_vw = graph_height / window_width_2 * 100;
     var per_label_height = graph_height_vw / VARIABLE_NUM;
-    if(per_label_height > 2){
+    if (per_label_height > 2) {
         per_label_height = 2;
     }
-    if(per_label_height < 1.34){
+    if (per_label_height < 1.34) {
         per_label_height = 1.34;
     }
-    for (var i = 0;i<VARIABLE_NUM;i++){
+    for (var i = 0; i < VARIABLE_NUM; i++) {
         var this_label = document.createElement('div');
         this_label.classList.add('label');
         this_label.style.height = per_label_height + 'vw';
@@ -156,7 +156,7 @@ var set_labels = () => {
     }
     var window_width = document.querySelector('main').clientWidth;
     var max_width_in_vw = max_width / window_width * 100;
-    max_width_in_vw+=5;
+    max_width_in_vw += 5;
     document.getElementById('wrapper').style.setProperty('--labels-width-vw', max_width_in_vw);
 };
 
@@ -165,42 +165,43 @@ document.querySelector('body').style.display = 'none';
 
 // 创建一个函数来使用 Promise 等待所有 Worker 完成任务
 function createData() {
-    if(data_loading_mode === MODE_LOAD_ONCE){
-    return new Promise((resolve) => {
-        var request = new XMLHttpRequest();
-        request.open('GET', load_once_url, true);
-        request.timeout = 200000;
-        request.responseType = 'arraybuffer';
-        request.onerror = () => {
-            console.log(' Request Error');
-        };
-        request.ontimeout = () => {
-            console.log('Request Timeout');
-        };
-        request.onload = () => {
-            var data = request.response;
-            console.log(data.byteLength);
-            if(data.byteLength !== VARIABLE_NUM * 4 * totalDataPoints){
-                console.log('Data Error');
-                return;
-            }
-            var view = new DataView(data);
-            for (var i=0;i<VARIABLE_NUM;i++){
-                var list = []
-                for(var j=0;j<totalDataPoints;j++){
-                    var number = view.getFloat32(i*4*totalDataPoints+j*4, false);
-                    list.push(number);
-                }
-                dataSets[i] = list;
-            }
-            resolve(dataSets);
-        };
-        request.send();
-    });}
-    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+    if (data_loading_mode === MODE_LOAD_ONCE) {
         return new Promise((resolve) => {
             var request = new XMLHttpRequest();
-            request.open('GET', load_at_update_base_url+'/minmax', true);
+            request.open('GET', load_once_url, true);
+            request.timeout = 200000;
+            request.responseType = 'arraybuffer';
+            request.onerror = () => {
+                console.log(' Request Error');
+            };
+            request.ontimeout = () => {
+                console.log('Request Timeout');
+            };
+            request.onload = () => {
+                var data = request.response;
+                console.log(data.byteLength);
+                if (data.byteLength !== VARIABLE_NUM * 4 * totalDataPoints) {
+                    console.log('Data Error');
+                    return;
+                }
+                var view = new DataView(data);
+                for (var i = 0; i < VARIABLE_NUM; i++) {
+                    var list = []
+                    for (var j = 0; j < totalDataPoints; j++) {
+                        var number = view.getFloat32(i * 4 * totalDataPoints + j * 4, false);
+                        list.push(number);
+                    }
+                    dataSets[i] = list;
+                }
+                resolve(dataSets);
+            };
+            request.send();
+        });
+    }
+    if (data_loading_mode === MODE_LOAD_AT_UPDATE) {
+        return new Promise((resolve) => {
+            var request = new XMLHttpRequest();
+            request.open('GET', load_at_update_base_url + '/minmax', true);
             request.onload = () => {
                 var b64data = request.responseText;
                 var data = base64ToArrayBuffer(b64data);
@@ -310,15 +311,16 @@ var window_resize = () => {
 };
 
 createData().then((dataSets) => {
-    if(data_loading_mode === MODE_LOAD_ONCE){
-    data = {
-        // labels: Array.from({ length: totalDataPoints }, (_, i) => i),
-        datasets: dataSets.map((data, i) => ({
-            // label: `Variable ${i + 1}`,
-            data: data
-        }))
-    };
-    find_global_min_max(data.datasets);}
+    if (data_loading_mode === MODE_LOAD_ONCE) {
+        data = {
+            // labels: Array.from({ length: totalDataPoints }, (_, i) => i),
+            datasets: dataSets.map((data, i) => ({
+                // label: `Variable ${i + 1}`,
+                data: data
+            }))
+        };
+        find_global_min_max(data.datasets);
+    }
     // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     all_finished = true;
     console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
@@ -439,7 +441,7 @@ function create_chartjs_x_values(start, end_plus_one, step) {
     }
     var ideal_length = Math.floor((origin_end_plus_one - 1 - start) / step) + 1;
     if (result.length < ideal_length) {
-        result.push(totalDataPoints-1);
+        result.push(totalDataPoints - 1);
     }
     return result;
 }
@@ -474,54 +476,55 @@ function createChart() {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
     var config;
-    if(data_loading_mode === MODE_LOAD_ONCE){
-    config = {
-        type: 'line',
-        data: {
-            labels: create_chartjs_x_values(start, end_plus_one, step),
-            datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
-                ...dataset,
-                data: slice(dataset.data, start, end_plus_one, step),
-                // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
-                borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
-                pointRadius: 0,
-                borderWidth: latest_line_width,
-                tension: 0,
-                borderJoinStyle: 'round'
-            }))
-        },
-        options: {
-            animation: false,
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false  // 不显示图例
-                },
-                tooltip: {
-                    enabled: false  // 关闭工具提示
-                }
+    if (data_loading_mode === MODE_LOAD_ONCE) {
+        config = {
+            type: 'line',
+            data: {
+                labels: create_chartjs_x_values(start, end_plus_one, step),
+                datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                    ...dataset,
+                    data: slice(dataset.data, start, end_plus_one, step),
+                    // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                    borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
+                    pointRadius: 0,
+                    borderWidth: latest_line_width,
+                    tension: 0,
+                    borderJoinStyle: 'round'
+                }))
             },
-            scales: {
-                x: {
-                    type: 'linear',
-                    min: (currentIndex),
-                    max: (currentIndex + fake_window_size),
-                    display: false
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // 不显示图例
+                    },
+                    tooltip: {
+                        enabled: false  // 关闭工具提示
+                    }
                 },
-                y: {
-                    display: false,
-                    // 设置 y
-                    min: get_y_min(),
-                    max: get_y_max()
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: (currentIndex),
+                        max: (currentIndex + fake_window_size),
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        // 设置 y
+                        min: get_y_min(),
+                        max: get_y_max()
+                    }
+                },
+                interaction: {
+                    mode: null  // 禁用鼠标悬停显示数据点信息
                 }
-            },
-            interaction: {
-                mode: null  // 禁用鼠标悬停显示数据点信息
             }
-        }
-    };}
-    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        };
+    }
+    if (data_loading_mode === MODE_LOAD_AT_UPDATE) {
         var json_data = {
             start: start,
             end: end_plus_one,
@@ -542,15 +545,15 @@ function createChart() {
         var view = new DataView(response_data);
         var datasets = [];
         var length = response_data.byteLength / VARIABLE_NUM / 4;
-        for (var i=0;i<VARIABLE_NUM;i++){
+        for (var i = 0; i < VARIABLE_NUM; i++) {
             var list = [];
-            for(var j=0;j<length;j++){
-                var number = view.getFloat32(i*4*length+j*4, false);
+            for (var j = 0; j < length; j++) {
+                var number = view.getFloat32(i * 4 * length + j * 4, false);
                 list.push(number);
-                if(number > current_max && VARIABLE_SHOW[i]){
+                if (number > current_max && VARIABLE_SHOW[i]) {
                     current_max = number;
                 }
-                if(number < current_min && VARIABLE_SHOW[i]){
+                if (number < current_min && VARIABLE_SHOW[i]) {
                     current_min = number;
                 }
             }
@@ -631,54 +634,55 @@ function createChart_for_show_hide_variable() {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
     var config;
-    if(data_loading_mode === MODE_LOAD_ONCE){
-    config = {
-        type: 'line',
-        data: {
-            labels: create_chartjs_x_values(start, end_plus_one, step),
-            datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
-                ...dataset,
-                data: slice_no_min_max(dataset.data, start, end_plus_one, step),
-                // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
-                borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
-                pointRadius: 0,
-                borderWidth: latest_line_width,
-                tension: 0,
-                borderJoinStyle: 'round'
-            }))
-        },
-        options: {
-            animation: false,
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false  // 不显示图例
-                },
-                tooltip: {
-                    enabled: false  // 关闭工具提示
-                }
+    if (data_loading_mode === MODE_LOAD_ONCE) {
+        config = {
+            type: 'line',
+            data: {
+                labels: create_chartjs_x_values(start, end_plus_one, step),
+                datasets: data.datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                    ...dataset,
+                    data: slice_no_min_max(dataset.data, start, end_plus_one, step),
+                    // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                    borderColor: LABEL_COLORS[data.datasets.indexOf(dataset)],
+                    pointRadius: 0,
+                    borderWidth: latest_line_width,
+                    tension: 0,
+                    borderJoinStyle: 'round'
+                }))
             },
-            scales: {
-                x: {
-                    type: 'linear',
-                    min: (currentIndex),
-                    max: (currentIndex + fake_window_size),
-                    display: false
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // 不显示图例
+                    },
+                    tooltip: {
+                        enabled: false  // 关闭工具提示
+                    }
                 },
-                y: {
-                    display: false,
-                    // 设置 y
-                    min: prev_config.options.scales.y.min,
-                    max: prev_config.options.scales.y.max
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: (currentIndex),
+                        max: (currentIndex + fake_window_size),
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        // 设置 y
+                        min: prev_config.options.scales.y.min,
+                        max: prev_config.options.scales.y.max
+                    }
+                },
+                interaction: {
+                    mode: null  // 禁用鼠标悬停显示数据点信息
                 }
-            },
-            interaction: {
-                mode: null  // 禁用鼠标悬停显示数据点信息
             }
-        }
-    };}
-    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        };
+    }
+    if (data_loading_mode === MODE_LOAD_AT_UPDATE) {
         var json_data = {
             start: start,
             end: end_plus_one,
@@ -697,10 +701,10 @@ function createChart_for_show_hide_variable() {
         var view = new DataView(response_data);
         var datasets = [];
         var length = response_data.byteLength / VARIABLE_NUM / 4;
-        for (var i=0;i<VARIABLE_NUM;i++){
+        for (var i = 0; i < VARIABLE_NUM; i++) {
             var list = [];
-            for(var j=0;j<length;j++){
-                var number = view.getFloat32(i*4*length+j*4, false);
+            for (var j = 0; j < length; j++) {
+                var number = view.getFloat32(i * 4 * length + j * 4, false);
                 list.push(number);
             }
             datasets.push(list);
@@ -1219,17 +1223,17 @@ var remote_print = (msg) => {
 
 // remote_print("Test message");
 // console.log("Test message");
-document.addEventListener('touchstart', ()=>{
+document.addEventListener('touchstart', () => {
     // console.log("Touch start");
     remote_print("Touch start");
 });
 
-document.addEventListener('touchend', ()=>{
+document.addEventListener('touchend', () => {
     // console.log("Touch end");
     remote_print("Touch end");
 });
 
-document.addEventListener('touchmove', ()=>{
+document.addEventListener('touchmove', () => {
     // console.log("Touch move");
     remote_print("Touch move");
 });

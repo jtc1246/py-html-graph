@@ -3,6 +3,10 @@ import random
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from _thread import start_new_thread
 from time import sleep
+from mySecrets import hexToStr
+import json
+from math import floor
+from myBasics import binToBase64
 
 
 def generate_data_10_500k() -> np.ndarray:
@@ -65,7 +69,7 @@ def generate_data_10_50m() -> np.ndarray:
 
 
 def to_big_endian(arr: np.ndarray) -> bytes:
-    return arr.byteswap().newbyteorder('>').tobytes()
+    return arr.byteswap().tobytes()
 
 
 # data = to_big_endian(generate_data_10_500k())
@@ -89,11 +93,18 @@ with open('data/10_5m.bin', 'rb') as f:
 with open('data/10_50m.bin', 'rb') as f:
     data_10_50m = f.read()
 
+array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
+print(array_10_50m[:,0])
+array_min = np.min(array_10_50m)
+array_max = np.max(array_10_50m)
+print(array_min, array_max)
+array_10_50m=array_10_50m.byteswap()
 
 class Request(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
-        if (path not in ('/data_10_500k', '/data_10_5m', '/data_10_50m')):
+        if (path not in ('/data_10_500k', '/data_10_5m', '/data_10_50m')
+            and not path.startswith('/window_data/')):
             print(404)
             self.send_response(404)
             self.send_header('Content-Length', 13)
@@ -129,6 +140,51 @@ class Request(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data_10_50m)
             return
+        if(path.startswith('/window_data/')):
+            if(path[13:] == 'minmax'):
+                print('minmax')
+                a=array_min.byteswap().tobytes()
+                b=array_max.byteswap().tobytes()
+                data = binToBase64(a+b)
+                self.send_response(200)
+                self.send_header('Content-Length', len(data))
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(data.encode('utf-8'))
+                return
+            data = path[13:]
+            json_data = json.loads(hexToStr(data))
+            print(json_data)
+            start = json_data['start']
+            end = json_data['end']
+            step = json_data['step']
+            # ideal_length = floor((end - 1 - start) / step) + 1
+            # # array = np.zeros((10, ideal_length), dtype=np.float32)
+            # tmp = array_10_50m[:, start:end:step]
+            # if(tmp.shape[1] < ideal_length):
+            #     array = np.zeros((10, ideal_length), dtype=np.float32)
+            #     array[:, :ideal_length-1] = tmp
+            #     array[:, ideal_length-1] = array_10_50m[:, -1]
+            # else:
+            #     array = tmp
+            selected = []
+            for i in range(start, end, step):
+                selected.append(i)
+            if(selected[0]<0):
+                selected[0]=0
+            if(selected[-1]>array_10_50m.shape[1]-1):
+                selected[-1]=array_10_50m.shape[1]-1
+            array = array_10_50m[:, selected]
+            data = array.tobytes()
+            data = binToBase64(data)
+            self.send_response(200)
+            self.send_header('Content-Length', len(data))
+            self.send_header('Connection', 'keep-alive')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(data.encode('utf-8'))
+            return
 
     def log_message(self,*args) -> None:
         pass
@@ -136,5 +192,6 @@ class Request(BaseHTTPRequestHandler):
 
 server = ThreadingHTTPServer(('0.0.0.0', 9012), Request)
 start_new_thread(server.serve_forever, ())
+print('Server started')
 while True:
     sleep(10)

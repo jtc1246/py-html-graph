@@ -532,11 +532,13 @@ function createChart() {
         var request = new XMLHttpRequest();
         request.open('GET', url, false);
         // request.responseType = 'arraybuffer';
+        var send_time = performance.now();
         request.send();
         console.log(request.status);
+        console.log(`Time to get data: ${performance.now() - send_time} ms`);
         var response_data = request.responseText;
         response_data = base64ToArrayBuffer(response_data);
-        console.log(response_data.byteLength);
+        // console.log(response_data.byteLength);
         var view = new DataView(response_data);
         var datasets = [];
         var length = response_data.byteLength / VARIABLE_NUM / 4;
@@ -545,17 +547,17 @@ function createChart() {
             for(var j=0;j<length;j++){
                 var number = view.getFloat32(i*4*length+j*4, false);
                 list.push(number);
-                if(number > current_max){
+                if(number > current_max && VARIABLE_SHOW[i]){
                     current_max = number;
                 }
-                if(number < current_min){
+                if(number < current_min && VARIABLE_SHOW[i]){
                     current_min = number;
                 }
             }
             datasets.push(list);
         }
         // console.log(datasets);
-        console.log(datasets[0])
+        // console.log(datasets[0])
         config = {
             type: 'line',
             data: {
@@ -628,7 +630,9 @@ function createChart_for_show_hide_variable() {
     if (latest_line_width === 0) {
         latest_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100;
     }
-    const config = {
+    var config;
+    if(data_loading_mode === MODE_LOAD_ONCE){
+    config = {
         type: 'line',
         data: {
             labels: create_chartjs_x_values(start, end_plus_one, step),
@@ -673,7 +677,82 @@ function createChart_for_show_hide_variable() {
                 mode: null  // 禁用鼠标悬停显示数据点信息
             }
         }
-    };
+    };}
+    if(data_loading_mode === MODE_LOAD_AT_UPDATE){
+        var json_data = {
+            start: start,
+            end: end_plus_one,
+            step: step
+        }
+        json_data = stringToHex(JSON.stringify(json_data));
+        url = load_at_update_base_url + '/' + json_data;
+        var request = new XMLHttpRequest();
+        request.open('GET', url, false);
+        // request.responseType = 'arraybuffer';
+        request.send();
+        console.log(request.status);
+        var response_data = request.responseText;
+        response_data = base64ToArrayBuffer(response_data);
+        // console.log(response_data.byteLength);
+        var view = new DataView(response_data);
+        var datasets = [];
+        var length = response_data.byteLength / VARIABLE_NUM / 4;
+        for (var i=0;i<VARIABLE_NUM;i++){
+            var list = [];
+            for(var j=0;j<length;j++){
+                var number = view.getFloat32(i*4*length+j*4, false);
+                list.push(number);
+            }
+            datasets.push(list);
+        }
+        // console.log(datasets);
+        // console.log(datasets[0])
+        config = {
+            type: 'line',
+            data: {
+                labels: create_chartjs_x_values(start, end_plus_one, step),
+                datasets: datasets.filter((_, i) => VARIABLE_SHOW[i]).map(dataset => ({
+                    data: dataset,
+                    // 这样就可以实现自定义颜色，但是因为随机生成的太难看，还是用它默认的
+                    borderColor: LABEL_COLORS[datasets.indexOf(dataset)],
+                    pointRadius: 0,
+                    borderWidth: latest_line_width,
+                    tension: 0,
+                    borderJoinStyle: 'round'
+                }))
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // 不显示图例
+                    },
+                    tooltip: {
+                        enabled: false  // 关闭工具提示
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: (currentIndex),
+                        max: (currentIndex + fake_window_size),
+                        display: false
+                    },
+                    y: {
+                        display: false,
+                        // 设置 y
+                        min: prev_config.options.scales.y.min,
+                        max: prev_config.options.scales.y.max
+                    }
+                },
+                interaction: {
+                    mode: null  // 禁用鼠标悬停显示数据点信息
+                }
+            }
+        };
+    }
     prev_config = config;
     fit_y_current = false;
     var chart_y_min = config.options.scales.y.min;

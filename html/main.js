@@ -25,7 +25,7 @@ const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
 const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 
 // Generate sample data
-const totalDataPoints = 500000;
+const totalDataPoints = 5000000;
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
 var window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,
@@ -87,7 +87,7 @@ var previous_window_width = document.querySelector('main').clientWidth;
 
 const numWorkers = VARIABLE_NUM;
 const workers = [];
-const dataSets = new Array(numWorkers).fill(null);
+const dataSets = new Array(VARIABLE_NUM).fill(null);
 let completedWorkers = 0;
 var all_finished = false;
 var generating_start_time = performance.now();
@@ -157,22 +157,51 @@ document.querySelector('body').style.display = 'none';
 // 创建一个函数来使用 Promise 等待所有 Worker 完成任务
 function createData() {
     return new Promise((resolve) => {
-        for (let i = 0; i < numWorkers; i++) {
-            const worker = new Worker(worker_url);
-            worker.onmessage = function (e) {
-                const { index, data } = e.data;
-                dataSets[index] = data;
-                completedWorkers++;
-                if (completedWorkers === numWorkers) {
-                    resolve(dataSets);
-                }
-            };
-            workers.push(worker);
-        }
+        // for (let i = 0; i < numWorkers; i++) {
+        //     const worker = new Worker(worker_url);
+        //     worker.onmessage = function (e) {
+        //         const { index, data } = e.data;
+        //         dataSets[index] = data;
+        //         completedWorkers++;
+        //         if (completedWorkers === numWorkers) {
+        //             resolve(dataSets);
+        //         }
+        //     };
+        //     workers.push(worker);
+        // }
 
-        workers.forEach((worker, index) => {
-            worker.postMessage({ totalDataPoints: totalDataPoints, seed: index });
-        });
+        // workers.forEach((worker, index) => {
+        //     worker.postMessage({ totalDataPoints: totalDataPoints, seed: index });
+        // });
+        var request = new XMLHttpRequest();
+        request.open('GET', 'http://127.0.0.1:9012/data_10_5m', true);
+        request.timeout = 5000;
+        request.responseType = 'arraybuffer';
+        request.onerror = () => {
+            console.log(' Request Error');
+        };
+        request.ontimeout = () => {
+            console.log('Request Timeout');
+        };
+        request.onload = () => {
+            var data = request.response;
+            console.log(data.byteLength);
+            if(data.byteLength !== VARIABLE_NUM * 4 * totalDataPoints){
+                console.log('Data Error');
+                return;
+            }
+            var view = new DataView(data);
+            for (var i=0;i<VARIABLE_NUM;i++){
+                var list = []
+                for(var j=0;j<totalDataPoints;j++){
+                    var number = view.getFloat32(i*4*totalDataPoints+j*4, false);
+                    list.push(number);
+                }
+                dataSets[i] = list;
+            }
+            resolve(dataSets);
+        };
+        request.send();
     });
 }
 

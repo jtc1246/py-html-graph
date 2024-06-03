@@ -57,8 +57,6 @@ var get_chart_height_in_vw = () => {
     var height = chart.clientHeight;
     var window_width = document.querySelector('main').clientWidth;
     var vw = height / window_width * 100;
-    // console.log(`window_width: ${window_width}`);
-    // console.log(`vw: ${vw}`);
     return vw;
 };
 
@@ -115,7 +113,6 @@ var set_y_value = (min, max) => {
         scale_element.classList.add('y-js');
         scale_element.style.top = `${distance_to_top}vw`;
         value_element.style.top = `${distance_to_top + offset}vw`;
-        // value_element.innerHTML = value.toFixed(2);
         value_element.innerHTML = encode_value(value) + '<br>';
         y_axis.appendChild(value_element);
         y_axis.appendChild(scale_element);
@@ -126,17 +123,10 @@ var set_y_value = (min, max) => {
 };
 
 function toScientificNotation(num) {
-    // 将数字转换为科学记数法字符串
     const sciString = num.toExponential();
-
-    // 分割科学记数法字符串，得到系数和指数部分
     const [coefficient, exponent] = sciString.split('e');
-
-    // 转换系数和指数为数值
     const coeffNum = parseFloat(coefficient);
     const expNum = parseInt(exponent);
-
-    // 返回两个数值
     return [coeffNum, expNum];
 }
 
@@ -203,8 +193,6 @@ var get_chart_width_in_vw = () => {
     var width = chart.clientWidth;
     var window_width = document.querySelector('main').clientWidth;
     var vw = width / window_width * 100;
-    // console.log(`window_width: ${window_width}`);
-    // console.log(`vw: ${vw}`);
     return vw;
 };
 
@@ -238,9 +226,6 @@ var delete_x_values_scales = () => {
 
 var encode_unix_ms = (num) => {
     num = Math.round(num / 1000) * 1000;
-    // if(x_relative){
-    //     num = num - START_UNIX_MS;
-    // }
     var date = new Date(num);
     const year = date.getUTCFullYear();     // 获取年份
     const month = date.getUTCMonth() + 1;   // 获取月份，getUTCMonth()返回的是0-11，所以需要+1
@@ -253,7 +238,6 @@ var encode_unix_ms = (num) => {
     if (x_relative) {
         line1 = Math.floor(num / 1000 / 86400) + 'd';
     }
-    // var time_str = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}&nbsp;<br class="no-select">${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     var time_str = '';
     if (latest_x_interval_for_encoding_only <= 6 * 3600) {
         time_str = line2 + '&nbsp;<br class="no-select">' + line1;
@@ -277,20 +261,13 @@ var set_x_value = () => {
         min -= START_UNIX_MS;
         max -= START_UNIX_MS;
     }
-    // document.getElementById('x-left-value').innerHTML = encode_unix_ms(min)+'<br>';
-    // document.getElementById('x-right-value').innerHTML = encode_unix_ms(max)+'<br>';
     var diff = max - min;
     var interval = find_interval(diff) * 1000;
     latest_x_interval_for_encoding_only = Math.round(interval / 1000);
     document.getElementById('x-left-value').innerHTML = encode_unix_ms(min) + '<br>';
     document.getElementById('x-right-value').innerHTML = encode_unix_ms(max) + '<br>';
-    // console.log(`interval: ${interval}`);
-    // var start = Math.floor(min / interval) * interval;
-    // var end = Math.ceil(max / interval) * interval;
     var start = Math.floor(min / interval) + 1;
     var end = Math.floor(max / interval);
-    // console.log(`start: ${start}`);
-    // console.log(`end: ${end}`);
     var num = (max - min) / interval;
     if (start * interval - min < interval * 0.5) {
         start += 1
@@ -318,7 +295,6 @@ var set_x_value = () => {
         scale_element.classList.add('x-js');
         scale_element.style.left = `${distance_to_left - 0.1}vw`;
         value_element.style.left = `${distance_to_left}vw`;
-        // value_element.innerHTML = value.toFixed(2);
         value_element.innerHTML = encode_unix_ms(value) + '<br>';
         x_axis.appendChild(value_element);
         x_axis.appendChild(scale_element);
@@ -352,7 +328,6 @@ var copy_info = async () => {
     information += document.getElementById('title').innerHTML + '\n';
     information += document.getElementById('y-title').innerHTML + '\n';
     var y_values = document.getElementsByClassName('y-value');
-    // for (var i = y_values.length - 1; i >= 0; i--) {
     for (var i = 0; i < y_values.length; i++) {
         information += y_values[i].innerHTML.replace('<br>', '\n');
     }
@@ -363,10 +338,3 @@ var copy_info = async () => {
     information += document.getElementById('x-title').innerHTML + '\n';
     await navigator.clipboard.writeText(information);
 };
-
-// const sharedBuffer = new SharedArrayBuffer(4);
-// const int32Array = new Int32Array(sharedBuffer);
-// var t4523 = performance.now();
-// Atomics.store(int32Array, 0, 1246);
-// console.log(Atomics.load(int32Array, 0));
-// console.log(performance.now() - t4523);

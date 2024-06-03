@@ -28,7 +28,6 @@ var access_data = async (start, end, step, window_size) => {
     json_data = stringToHex(JSON.stringify(json_data));
     var url = base_url + '/' + json_data;
 
-    // 使用 Promise 包装 XMLHttpRequest
     var response_data = await new Promise((resolve, reject) => {
         var request = new XMLHttpRequest();
         request.open('GET', url, true); // true 使其异步
@@ -100,17 +99,12 @@ onmessage = (e) => {
 
 // =============================== Util Functions ===============================
 function base64ToArrayBuffer(base64) {
-    // 解码 base64 字符串
     const binaryString = atob(base64);
-
-    // 创建 Uint8Array 并填充数据
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
         bytes[i] = binaryString.charCodeAt(i);
     }
-
-    // 将 Uint8Array 转换为 ArrayBuffer
     return bytes.buffer;
 }
 

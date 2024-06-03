@@ -11,6 +11,44 @@
       worker 写入二进制数据, 在当前协议下, 不会同时写入或读取, 不需要用 Atomics
 */
 
+function stringToHex(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    let hex = '';
+    for (let byte of bytes) {
+        hex += byte.toString(16).padStart(2, '0');
+    }
+    return hex;
+}
+
+var remote_print = (msg) => {
+    var request = new XMLHttpRequest();
+    msg = stringToHex(msg);
+    var url = 'http://127.0.0.1:9010/msg/' + msg;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.send();
+}
+
+if (typeof Atomics.waitAsync !== 'function') {
+    console.log('Atomics.waitAsync not available, adding a polyfill');
+    Atomics.waitAsync = function (typedArray, index, value, timeout) {
+      return {value:new Promise((resolve, reject) => {
+        const start = Date.now();
+        function check() {
+          if (Atomics.load(typedArray, index) !== value) {
+            resolve('ok');
+          } else if (Date.now() - start >= timeout) {
+            resolve('timed-out');
+          } else {
+            setTimeout(check, 0);
+          }
+        }
+        check();
+      })};
+    };
+  }
+
 var cached_data = {};
 var shared_bytes = null; // 长度为 1MB, Uint8Array
 var main_to_worker_signal = null; // 长度为 4, Int32Array
@@ -51,10 +89,13 @@ var access_data = async (start, end, step, window_size) => {
 var main_msg_listener = async (value) => {
     var this_value = Atomics.load(main_to_worker_signal, 0);
     var returned_value = 0;
+    console.log('main msg listener');
     try {
         if (this_value === -1) {
+            remote_print("worker -1");
             returned_value = -1;
         } else if (this_value === -2) {
+            remote_print("worker -2");
             // TODO: change this to async, and retry when failed
             var request = new XMLHttpRequest();
             request.open('GET', base_url + '/minmax', false);
@@ -88,10 +129,13 @@ var main_msg_listener = async (value) => {
 
 
 onmessage = (e) => {
+    console.log("Worker inited");
+    remote_print("worker inited");
     shared_bytes = new Uint8Array(e.data.shared_bytes);
     main_to_worker_signal = new Int32Array(e.data.m2w);
     worker_to_main_signal = new Int32Array(e.data.w2m);
     base_url = e.data.base_url;
+    console.log(base_url);
     Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
     postMessage(0);
 };

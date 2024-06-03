@@ -225,7 +225,7 @@ function createData() {
             cache_worker_shared_bytes = new Uint8Array(shared_bytes);
             Atomics.store(main_to_worker_signal, 0, 0);
             Atomics.store(worker_to_main_signal, 0, 0);
-            cache_worker.postMessage({ 
+            cache_worker.postMessage({
                 first: true,
                 m2w: mtow_array,
                 w2m: wtom_array,
@@ -681,7 +681,7 @@ function createChart() {
         }
         Atomics.store(worker_to_main_signal, 0, 0);
         // console.log(`Result length: ${result_length}`);
-        var response_data  = cache_worker_shared_bytes.buffer.slice(0, result_length);
+        var response_data = cache_worker_shared_bytes.buffer.slice(0, result_length);
         // console.log(response_data.byteLength);
         var view = new DataView(response_data);
         var datasets = [];
@@ -920,7 +920,7 @@ function createChart_for_show_hide_variable() {
         }
         Atomics.store(worker_to_main_signal, 0, 0);
         // console.log(`Result length: ${result_length}`);
-        var response_data  = cache_worker_shared_bytes.buffer.slice(0, result_length);
+        var response_data = cache_worker_shared_bytes.buffer.slice(0, result_length);
         // console.log(response_data.byteLength);
         var view = new DataView(response_data);
         var datasets = [];

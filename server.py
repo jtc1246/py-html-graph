@@ -49,6 +49,8 @@ class Request(BaseHTTPRequestHandler):
                 print(hexToStr(msg))
             self.send_response(200)
             self.send_header('Content-Length', 0)
+            self.send_header('Connection', 'keep-alive')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             return
         if (path not in ['/', '/index.html', '/cache_worker.js']):

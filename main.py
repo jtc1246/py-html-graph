@@ -209,13 +209,13 @@ class Request(BaseHTTPRequestHandler):
                 selected[-1]=array_10_50m.shape[1]-1
             array = array_10_50m[:, selected]
             data = array.tobytes()
-            data = binToBase64(data)
+            # data = binToBase64(data)
             self.send_response(200)
             self.send_header('Content-Length', len(data))
             self.send_header('Connection', 'keep-alive')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(data.encode('utf-8'))
+            self.wfile.write(data)
             return
 
     def log_message(self,*args) -> None:

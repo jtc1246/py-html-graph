@@ -17,28 +17,57 @@ var main_to_worker_signal = null; // 长度为 4, Int32Array
 var worker_to_main_signal = null; // 长度为 4, Int32Array
 var base_url; // 获取数据的链接
 
-var access_data = (start, end, step, window_size) => {
+// var access_data = (start, end, step, window_size) => {
+//     // 这里写入 shared_bytes, 返回长度
+//     var json_data = {
+//         start: start,
+//         end: end,
+//         step: step
+//     }
+//     json_data = stringToHex(JSON.stringify(json_data));
+//     var url = base_url + '/' + json_data;
+//     var request = new XMLHttpRequest();
+//     request.open('GET', url, false);
+//     request.send();
+//     var response_data = request.responseText;
+//     response_data = base64ToArrayBuffer(response_data);
+//     var response_length = response_data.byteLength;
+//     shared_bytes.set(new Uint8Array(response_data), 0);
+//     return response_length;
+// }
+
+var access_data = async (start, end, step, window_size) => {
     // 这里写入 shared_bytes, 返回长度
     var json_data = {
         start: start,
         end: end,
         step: step
-    }
+    };
     json_data = stringToHex(JSON.stringify(json_data));
     var url = base_url + '/' + json_data;
-    var request = new XMLHttpRequest();
-    request.open('GET', url, false);
-    request.send();
-    var response_data = request.responseText;
-    response_data = base64ToArrayBuffer(response_data);
+    
+    // 使用 Promise 包装 XMLHttpRequest
+    var response_data = await new Promise((resolve, reject) => {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true); // true 使其异步
+        request.responseType = 'arraybuffer';
+        request.onload = function() {
+            resolve(request.response);
+        };
+        request.onerror = function() {
+            reject(new Error('Network error'));
+        };
+        request.send();
+    });
+
     var response_length = response_data.byteLength;
-    var responseArray = new Uint8Array(response_data);
-    shared_bytes.set(responseArray, 0);
+    shared_bytes.set(new Uint8Array(response_data), 0);
     return response_length;
-}
+};
 
 
-var main_msg_listener = (value) => {
+
+var main_msg_listener = async (value) => {
     var this_value = Atomics.load(main_to_worker_signal, 0);
     var returned_value = 0;
     try{
@@ -63,7 +92,7 @@ var main_msg_listener = (value) => {
         var end = json_data.end;
         var step = json_data.step;
         var window_size = json_data.window_size;
-        returned_value = access_data(start, end, step, window_size);
+        returned_value = await access_data(start, end, step, window_size);
     } else {
         throw "Unknown signal: " + this_value;
     }

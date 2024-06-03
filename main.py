@@ -104,7 +104,8 @@ class Request(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
         if (path not in ('/data_10_500k', '/data_10_5m', '/data_10_50m')
-            and not path.startswith('/window_data/')):
+            and not path.startswith('/window_data/')
+            and not path.startswith('/preload_data/')):
             print(404)
             self.send_response(404)
             self.send_header('Content-Length', 13)
@@ -140,9 +141,10 @@ class Request(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data_10_50m)
             return
+        # for load at update
         if(path.startswith('/window_data/')):
             if(path[13:] == 'minmax'):
-                print('minmax')
+                print('at update: minmax')
                 a=array_min.byteswap().tobytes()
                 b=array_max.byteswap().tobytes()
                 data = binToBase64(a+b)
@@ -155,19 +157,49 @@ class Request(BaseHTTPRequestHandler):
                 return
             data = path[13:]
             json_data = json.loads(hexToStr(data))
+            print('at update: ', end='')
             print(json_data)
             start = json_data['start']
             end = json_data['end']
             step = json_data['step']
-            # ideal_length = floor((end - 1 - start) / step) + 1
-            # # array = np.zeros((10, ideal_length), dtype=np.float32)
-            # tmp = array_10_50m[:, start:end:step]
-            # if(tmp.shape[1] < ideal_length):
-            #     array = np.zeros((10, ideal_length), dtype=np.float32)
-            #     array[:, :ideal_length-1] = tmp
-            #     array[:, ideal_length-1] = array_10_50m[:, -1]
-            # else:
-            #     array = tmp
+            selected = []
+            for i in range(start, end, step):
+                selected.append(i)
+            if(selected[0]<0):
+                selected[0]=0
+            if(selected[-1]>array_10_50m.shape[1]-1):
+                selected[-1]=array_10_50m.shape[1]-1
+            array = array_10_50m[:, selected]
+            data = array.tobytes()
+            data = binToBase64(data)
+            self.send_response(200)
+            self.send_header('Content-Length', len(data))
+            self.send_header('Connection', 'keep-alive')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(data.encode('utf-8'))
+            return
+        # for preload and cache
+        if(path.startswith('/preload_data/')):
+            if(path[14:] == 'minmax'):
+                print('preload: minmax')
+                a=array_min.byteswap().tobytes()
+                b=array_max.byteswap().tobytes()
+                data = binToBase64(a+b)
+                self.send_response(200)
+                self.send_header('Content-Length', len(data))
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(data.encode('utf-8'))
+                return
+            data = path[14:]
+            json_data = json.loads(hexToStr(data))
+            print('preload: ', end='')
+            print(json_data)
+            start = json_data['start']
+            end = json_data['end']
+            step = json_data['step']
             selected = []
             for i in range(start, end, step):
                 selected.append(i)

@@ -48,7 +48,6 @@ def generate_data_10_5m() -> np.ndarray:
             array[i][j] = currentValue
     return array
 
-
 def generate_data_10_50m() -> np.ndarray:
     array = np.zeros((10, 50000000), dtype=np.float32)
     # generator = random.Random(0)
@@ -95,19 +94,18 @@ with open('data/10_50m.bin', 'rb') as f:
     data_10_50m = f.read()
 
 array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
-print(array_10_50m[:, 0])
+print(array_10_50m[:,0])
 array_min = np.min(array_10_50m)
 array_max = np.max(array_10_50m)
 print(array_min, array_max)
-array_10_50m = array_10_50m.byteswap()
-
+array_10_50m=array_10_50m.byteswap()
 
 class Request(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
         if (path not in ('/data_10_500k', '/data_10_5m', '/data_10_50m')
             and not path.startswith('/window_data/')
-                and not path.startswith('/preload_data/')):
+            and not path.startswith('/preload_data/')):
             print(404)
             self.send_response(404)
             self.send_header('Content-Length', 13)
@@ -144,12 +142,12 @@ class Request(BaseHTTPRequestHandler):
             self.wfile.write(data_10_50m)
             return
         # for load at update
-        if (path.startswith('/window_data/')):
-            if (path[13:] == 'minmax'):
+        if(path.startswith('/window_data/')):
+            if(path[13:] == 'minmax'):
                 print('at update: minmax')
-                a = array_min.byteswap().tobytes()
-                b = array_max.byteswap().tobytes()
-                data = binToBase64(a + b)
+                a=array_min.byteswap().tobytes()
+                b=array_max.byteswap().tobytes()
+                data = binToBase64(a+b)
                 self.send_response(200)
                 self.send_header('Content-Length', len(data))
                 self.send_header('Connection', 'keep-alive')
@@ -167,10 +165,10 @@ class Request(BaseHTTPRequestHandler):
             selected = []
             for i in range(start, end, step):
                 selected.append(i)
-            if (selected[0] < 0):
-                selected[0] = 0
-            if (selected[-1] > array_10_50m.shape[1] - 1):
-                selected[-1] = array_10_50m.shape[1] - 1
+            if(selected[0]<0):
+                selected[0]=0
+            if(selected[-1]>array_10_50m.shape[1]-1):
+                selected[-1]=array_10_50m.shape[1]-1
             array = array_10_50m[:, selected]
             data = array.tobytes()
             data = binToBase64(data)
@@ -182,12 +180,12 @@ class Request(BaseHTTPRequestHandler):
             self.wfile.write(data.encode('utf-8'))
             return
         # for preload and cache
-        if (path.startswith('/preload_data/')):
-            if (path[14:] == 'minmax'):
+        if(path.startswith('/preload_data/')):
+            if(path[14:] == 'minmax'):
                 print('preload: minmax')
-                a = array_min.byteswap().tobytes()
-                b = array_max.byteswap().tobytes()
-                data = binToBase64(a + b)
+                a=array_min.byteswap().tobytes()
+                b=array_max.byteswap().tobytes()
+                data = binToBase64(a+b)
                 self.send_response(200)
                 self.send_header('Content-Length', len(data))
                 self.send_header('Connection', 'keep-alive')
@@ -205,22 +203,22 @@ class Request(BaseHTTPRequestHandler):
             selected = []
             for i in range(start, end, step):
                 selected.append(i)
-            if (selected[0] < 0):
-                selected[0] = 0
-            if (selected[-1] > array_10_50m.shape[1] - 1):
-                selected[-1] = array_10_50m.shape[1] - 1
+            if(selected[0]<0):
+                selected[0]=0
+            if(selected[-1]>array_10_50m.shape[1]-1):
+                selected[-1]=array_10_50m.shape[1]-1
             array = array_10_50m[:, selected]
             data = array.tobytes()
-            # data = binToBase64(data)
+            data = binToBase64(data)
             self.send_response(200)
             self.send_header('Content-Length', len(data))
             self.send_header('Connection', 'keep-alive')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(data)
+            self.wfile.write(data.encode('utf-8'))
             return
 
-    def log_message(self, *args) -> None:
+    def log_message(self,*args) -> None:
         pass
 
 

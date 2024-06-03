@@ -22,32 +22,14 @@ function stringToHex(str) {
 }
 
 var remote_print = (msg) => {
-    var request = new XMLHttpRequest();
+    // var request = new XMLHttpRequest();
     msg = stringToHex(msg);
     var url = 'http://127.0.0.1:9010/msg/' + msg;
-    var request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.send();
+    // var request = new XMLHttpRequest();
+    // request.open('GET', url, true);
+    // request.send();
+    fetch(url);
 }
-
-if (typeof Atomics.waitAsync !== 'function') {
-    console.log('Atomics.waitAsync not available, adding a polyfill');
-    Atomics.waitAsync = function (typedArray, index, value, timeout) {
-      return {value:new Promise((resolve, reject) => {
-        const start = Date.now();
-        function check() {
-          if (Atomics.load(typedArray, index) !== value) {
-            resolve('ok');
-          } else if (Date.now() - start >= timeout) {
-            resolve('timed-out');
-          } else {
-            setTimeout(check, 0);
-          }
-        }
-        check();
-      })};
-    };
-  }
 
 var cached_data = {};
 var shared_bytes = null; // 长度为 1MB, Uint8Array
@@ -55,100 +37,121 @@ var main_to_worker_signal = null; // 长度为 4, Int32Array
 var worker_to_main_signal = null; // 长度为 4, Int32Array
 var base_url; // 获取数据的链接
 
+var listen_signal = () => {
+    var value = Atomics.load(main_to_worker_signal, 0);
+    if(value === 0){
+        setTimeout(listen_signal, 1);
+    } else {
+        main_msg_listener(value);
+    }
+}
 
-var access_data = async (start, end, step, window_size) => {
+var access_data = (start, end, step, window_size) => {
     // 这里写入 shared_bytes, 返回长度
     var json_data = {
         start: start,
         end: end,
         step: step
-    };
+    }
     json_data = stringToHex(JSON.stringify(json_data));
     var url = base_url + '/' + json_data;
-
-    var response_data = await new Promise((resolve, reject) => {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true); // true 使其异步
-        request.responseType = 'arraybuffer';
-        request.onload = function () {
-            resolve(request.response);
-        };
-        request.onerror = function () {
-            reject(new Error('Network error'));
-        };
-        request.send();
-    });
-
+    var request = new XMLHttpRequest();
+    request.open('GET', url, false);
+    request.send();
+    var response_data = request.responseText;
+    response_data = base64ToArrayBuffer(response_data);
     var response_length = response_data.byteLength;
-    shared_bytes.set(new Uint8Array(response_data), 0);
+    var responseArray = new Uint8Array(response_data);
+    shared_bytes.set(responseArray, 0);
     return response_length;
-};
+}
 
 
-
-var main_msg_listener = async (value) => {
+var main_msg_listener = (value) => {
+    console.log('main_msg_listener');
+    remote_print('main_msg_listener');
     var this_value = Atomics.load(main_to_worker_signal, 0);
     var returned_value = 0;
-    console.log('main msg listener');
-    try {
-        if (this_value === -1) {
-            remote_print("worker -1");
-            returned_value = -1;
-        } else if (this_value === -2) {
-            remote_print("worker -2");
-            // TODO: change this to async, and retry when failed
-            var request = new XMLHttpRequest();
-            request.open('GET', base_url + '/minmax', false);
-            request.send();
-            var response_data = base64ToArrayBuffer(request.responseText);
-            var responseArray = new Uint8Array(response_data);
-            shared_bytes.set(responseArray);
-            returned_value = -2;
-        } else if (this_value <= -3) {
-            var sub_array = shared_bytes.subarray(0, -this_value);
-            var sub_array_buffer = new ArrayBuffer(-this_value);
-            var sub_array = new Uint8Array(sub_array_buffer);
-            sub_array.set(shared_bytes.subarray(0, -this_value));
-            var json_data = JSON.parse(new TextDecoder().decode(sub_array));
-            var start = json_data.start;
-            var end = json_data.end;
-            var step = json_data.step;
-            var window_size = json_data.window_size;
-            returned_value = await access_data(start, end, step, window_size);
-        } else {
-            throw "Unknown signal: " + this_value;
+    postMessage(this_value);
+    try{
+    if (this_value === -1) {
+        returned_value = -1;
+    } else if (this_value === -2) {
+        Atomics.store(main_to_worker_signal, 0, 0);
+        Atomics.store(worker_to_main_signal, 0, -2);
+        listen_signal();
+        return;
+        // TODO: change this to async, and retry when failed
+        try{
+        var request = new XMLHttpRequest();
+        request.open('GET', base_url + '/minmax', false);
+        request.send();
+        var response_data = base64ToArrayBuffer(request.responseText);
+        var responseArray = new Uint8Array(response_data);
+        shared_bytes.set(responseArray);
+        returned_value = -2;}
+        catch(e){
+            Atomics.store(worker_to_main_signal, 0, -2);
+            postMessage(e);
+            return;
         }
-    } catch (e) {
+    } else if (this_value <= -3) {
+        Atomics.store(main_to_worker_signal, 0, 0);
+        Atomics.store(worker_to_main_signal, 0, 36040);
+        listen_signal();
+        return;
+        var sub_array = shared_bytes.subarray(0, -this_value);
+        var sub_array_buffer = new ArrayBuffer(-this_value);
+        var sub_array = new Uint8Array(sub_array_buffer);
+        sub_array.set(shared_bytes.subarray(0, -this_value));
+        var json_data = JSON.parse(new TextDecoder().decode(sub_array));
+        var start = json_data.start;
+        var end = json_data.end;
+        var step = json_data.step;
+        var window_size = json_data.window_size;
+        returned_value = access_data(start, end, step, window_size);
+    } else {
+        throw "Unknown signal: " + this_value;
+    }
+    } catch(e) {
         console.log(e);
         returned_value = -5;
     }
     Atomics.store(main_to_worker_signal, 0, 0);
-    Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
+    // Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
+    listen_signal();
     Atomics.store(worker_to_main_signal, 0, returned_value);
 }
 
 
 onmessage = (e) => {
-    console.log("Worker inited");
-    remote_print("worker inited");
+    // remote_print('worker inited');
+    console.log('worker inited');
     shared_bytes = new Uint8Array(e.data.shared_bytes);
     main_to_worker_signal = new Int32Array(e.data.m2w);
     worker_to_main_signal = new Int32Array(e.data.w2m);
     base_url = e.data.base_url;
-    console.log(base_url);
-    Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
+    // Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
+    listen_signal();
+    // console.log('worker inited done');
     postMessage(0);
+    // console.log('worker inited done 2');
 };
 
 
 // =============================== Util Functions ===============================
 function base64ToArrayBuffer(base64) {
+    // 解码 base64 字符串
     const binaryString = atob(base64);
+
+    // 创建 Uint8Array 并填充数据
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
         bytes[i] = binaryString.charCodeAt(i);
     }
+
+    // 将 Uint8Array 转换为 ArrayBuffer
     return bytes.buffer;
 }
 
@@ -161,3 +164,4 @@ function stringToHex(str) {
     }
     return hex;
 }
+

@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from _thread import start_new_thread
-from time import sleep
+from time import sleep, time
 
 from myBasics import strToBase64
 import sys
@@ -46,7 +46,7 @@ class Request(BaseHTTPRequestHandler):
         if(path.startswith('/msg/')):
             msg = path[5:]
             with print_lock:
-                print(hexToStr(msg))
+                print(str(time())+hexToStr(msg))
             self.send_response(200)
             self.send_header('Content-Length', 0)
             self.send_header('Access-Control-Allow-Origin', '*')

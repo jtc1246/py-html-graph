@@ -224,8 +224,14 @@ function createData() {
                 shared_bytes: shared_bytes,
                 base_url: preload_and_cache_base_url
             });
+            var is_first = true;
             cache_worker.onmessage = (e) => {
-                resolve(null);
+                if(is_first){
+                    is_first = false;
+                    resolve(null);
+                    return;
+                }
+                console.log(e.data);
             };
         });
     }
@@ -352,6 +358,7 @@ createData().then((dataSets) => {
                 break;
             }
         }
+        // console.log('Min max value got');
         var view = new DataView(cache_worker_shared_bytes.buffer, 0, 8);
         var min = view.getFloat32(0, false);
         var max = view.getFloat32(4, false);

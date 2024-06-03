@@ -51,7 +51,7 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Content-Length', 0)
             self.end_headers()
             return
-        if (path not in ['/', '/index.html']):
+        if (path not in ['/', '/index.html', '/cache_worker.js']):
             print(404)
             self.send_response(404)
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -59,26 +59,30 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
             self.send_header('Content-Length', 13)
             self.send_header('Connection', 'keep-alive')
+            self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+            self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
             self.end_headers()
             self.wfile.write(b'404 Not Found')
             return
-        # if (path == '/data_worker.js'):
-        #     print('data_worker.js')
-        #     self.send_response(200)
-        #     self.send_header('Content-Type', 'application/javascript')
-        #     self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        #     self.send_header('Pragma', 'no-cache')
-        #     self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
-        #     self.end_headers()
-        #     with open('./html/data_worker.js', 'rb') as f:
-        #         self.wfile.write(f.read())
-        #     return
+        if (path == '/cache_worker.js'):
+            print('cache_worker.js')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/javascript')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
+            self.end_headers()
+            with open('./html/cache_worker.js', 'rb') as f:
+                self.wfile.write(f.read())
+            return
         self.send_response(200)
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Connection', 'keep-alive')
+        self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+        self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
         with open('./html/main.html', 'r') as f:
             html = f.read()
         with open('./html/chart.js', 'r') as f:
@@ -93,16 +97,16 @@ class Request(BaseHTTPRequestHandler):
             stylejs = f.read()
         with open('./html/axis.js', 'r') as f:
             axisjs = f.read()
-        # with open('./html/data_worker.js', 'r') as f:
-        #     worker = f.read()
-        # worker = strToBase64(worker)
+        with open('./html/cache_worker.js', 'r') as f:
+            worker = f.read()
+        worker = strToBase64(worker)
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
         html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
         html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
         html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
         html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
         html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
-        # html = html.replace("'$workerb64$'", f"'{worker}'")
+        html = html.replace("'$cacheworkerbase64$'", f"'{worker}'")
         html = html.encode('utf-8')
         self.send_header('Content-Length', len(html))
         self.end_headers()

@@ -20,10 +20,17 @@ const MODE_LOAD_ONCE = 12000001;
 const MODE_LOAD_AT_UPDATE = 12000002;
 const MODE_PRELOAD_AND_CACHE = 12000003;
 
-const data_loading_mode = MODE_LOAD_AT_UPDATE;
+const data_loading_mode = MODE_PRELOAD_AND_CACHE;
 const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
 const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
-const preload_and_cache_base_url = '';
+const preload_and_cache_base_url = 'http://10.0.0.134:9012/window_data';
+
+var cache_worker = null;
+var main_to_worker_signal = null;
+var worker_to_main_signal = null;
+var cache_worker_shared_bytes = null;
+
+const cache_worker_url = 'data:application/javascript;base64,' + '$cacheworkerbase64$';
 
 // Generate sample data
 const totalDataPoints = 50000000;
@@ -99,10 +106,10 @@ var create_label_callback = (index) => {
         var element = document.getElementById(`label-checkbox-${tmp}`);
         if (element.checked) {
             VARIABLE_SHOW[tmp] = true;
-            console.log(`Variable ${tmp + 1} is shown`);
+            // console.log(`Variable ${tmp + 1} is shown`);
         } else {
             VARIABLE_SHOW[tmp] = false;
-            console.log(`Variable ${tmp + 1} is hidden`);
+            // console.log(`Variable ${tmp + 1} is hidden`);
         }
         myChart.destroy();
         myChart = createChart_for_show_hide_variable();
@@ -200,11 +207,34 @@ function createData() {
                 var view = new DataView(data);
                 global_min = view.getFloat32(0, false);
                 global_max = view.getFloat32(4, false);
-                console.log(`Global max: ${global_max}, Global min: ${global_min}`);
+                // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
                 resolve(null);
             };
             request.send();
             // resolve(null);
+        });
+    }
+    if (data_loading_mode === MODE_PRELOAD_AND_CACHE) {
+        return new Promise((resolve) => {
+            cache_worker = new Worker(cache_worker_url);
+            var mtow_array = new SharedArrayBuffer(4);
+            main_to_worker_signal = new Int32Array(mtow_array);
+            var wtom_array = new SharedArrayBuffer(4);
+            worker_to_main_signal = new Int32Array(wtom_array);
+            var shared_bytes = new SharedArrayBuffer(1000000);
+            cache_worker_shared_bytes = new Uint8Array(shared_bytes);
+            Atomics.store(main_to_worker_signal, 0, 0);
+            Atomics.store(worker_to_main_signal, 0, 0);
+            cache_worker.postMessage({ 
+                first: true,
+                m2w: mtow_array,
+                w2m: wtom_array,
+                shared_bytes: shared_bytes,
+                base_url: preload_and_cache_base_url
+            });
+            cache_worker.onmessage = (e) => {
+                resolve(null);
+            };
         });
     }
 }
@@ -312,6 +342,36 @@ createData().then((dataSets) => {
             }))
         };
         find_global_min_max(data.datasets);
+    }
+    if (data_loading_mode === MODE_PRELOAD_AND_CACHE) {
+        console.log('Worker ready');
+        Atomics.store(main_to_worker_signal, 0, -1);
+        Atomics.notify(main_to_worker_signal, 0);
+        while (true) {
+            var signal = Atomics.load(worker_to_main_signal, 0);
+            // console.log(signal);
+            if (signal === -1) {
+                console.log('Worker responded');
+                break;
+            }
+        }
+        Atomics.store(worker_to_main_signal, 0, 0);
+        Atomics.store(main_to_worker_signal, 0, -2);
+        Atomics.notify(main_to_worker_signal, 0);
+        while (true) {
+            var signal = Atomics.load(worker_to_main_signal, 0);
+            // console.log(signal);
+            if (signal === -2) {
+                console.log('Min max value got');
+                break;
+            }
+        }
+        var view = new DataView(cache_worker_shared_bytes.buffer, 0, 8);
+        var min = view.getFloat32(0, false);
+        var max = view.getFloat32(4, false);
+        global_max = max;
+        global_min = min;
+        console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     }
     // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     all_finished = true;
@@ -529,7 +589,7 @@ function createChart() {
         // request.responseType = 'arraybuffer';
         var send_time = performance.now();
         request.send();
-        console.log(request.status);
+        // console.log(request.status);
         console.log(`Time to get data: ${performance.now() - send_time} ms`);
         var response_data = request.responseText;
         response_data = base64ToArrayBuffer(response_data);
@@ -686,7 +746,7 @@ function createChart_for_show_hide_variable() {
         request.open('GET', url, false);
         // request.responseType = 'arraybuffer';
         request.send();
-        console.log(request.status);
+        // console.log(request.status);
         var response_data = request.responseText;
         response_data = base64ToArrayBuffer(response_data);
         // console.log(response_data.byteLength);
@@ -1112,7 +1172,7 @@ window.addEventListener('mousemove', () => {
     if (mouse_x === -1) {
         // for safari
         mouse_x = mouseX;
-        console.log("Safari");
+        // console.log("Safari");
     }
     var ratio = (mouse_x - valid_left) / (valid_right - valid_left);
     if (ratio < 0) {

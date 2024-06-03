@@ -363,3 +363,10 @@ var copy_info = async () => {
     information += document.getElementById('x-title').innerHTML + '\n';
     await navigator.clipboard.writeText(information);
 };
+
+// const sharedBuffer = new SharedArrayBuffer(4);
+// const int32Array = new Int32Array(sharedBuffer);
+// var t4523 = performance.now();
+// Atomics.store(int32Array, 0, 1246);
+// console.log(Atomics.load(int32Array, 0));
+// console.log(performance.now() - t4523);

@@ -19,7 +19,7 @@
  *  4. 在一定等级 (暂定常数A) 以内, 如果没有就要缓存, 在一定等级之内 (暂定常数B), 有了不会删, 但是不会去单独缓存,
  *     超过B等级, 就会删除
  *  5. 缓存的数据库是一个字典, key 为 level, value: 对于全部缓存的level, 是一个数组, 对于部分缓存的 level,
- *     分成多个区域, 每个区域有最大值、最小值、数据
+ *     分成多个区域, 每个区域有最大值、最小值、数据, 且都是 递增的、无重合的、不连续的
  *  6. 上述的数组, 都是连续的二进制数据, 储存 float32, 就是 4 字节, 使用 Uint8Array
  *  7. 目前不会对同一批次中需要缓存的数据做优先级区分, 目前使用 http 请求, 将来可能会使用 websocket, 并进行优先级
  *     区分
@@ -114,6 +114,9 @@ var cache_init = () => {
     }
     console.log("Max level: ", MAX_LEVEL);
     console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
+    for (var i = 0; i < MAX_LEVEL; i++) {
+        cached_data[i] = [];
+    }
     do_whole_level_cache();
 };
 
@@ -123,18 +126,23 @@ var access_data_2 = async (start, end, step, window_size) => {
     current_request_end = end;
     current_request_step = step;
     var level = Math.round(Math.log2(step));
+    var length = Math.floor((end - 1 - start) / step) + 1;
+    var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
+    if (level == 0) {
+        cache_start = start;
+    }
     // 1. 检查 whole_level_caches 是否能满足需求
     if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
         var this_level = whole_level_caches[level];
-        var length = Math.floor((end - 1 - start) / step)+1;
+        // var length = Math.floor((end - 1 - start) / step)+1;
         var response_bytes = shared_bytes;
         var cache_bytes = new Uint8Array(this_level);
         var cache_length = cache_bytes.length;
         var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        var cache_start = Math.floor(start / step)+1;
-        if(level == 0) {
-            cache_start = start;
-        }
+        // var cache_start = Math.floor(start / step)+1;
+        // if (level == 0) {
+        //     cache_start = start;
+        // }
         var cache_end = cache_start + length; // actual end plus 1
         for (var i = 0; i < VARIABLE_NUM; i++) {
             var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
@@ -142,9 +150,88 @@ var access_data_2 = async (start, end, step, window_size) => {
             var response_start_byte = i * length * 4;
             response_bytes.set(cache_bytes.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
-        return length*4*VARIABLE_NUM;
+        return length * 4 * VARIABLE_NUM;
     }
-    return await access_data(start, end, step, window_size);
+    // 2. 检查 cached_data 是否能满足需求
+    for (; cached_data[level].length !== 0;) {
+        // 为了使用 break
+        var part_num = cached_data[level].length;
+        var found = false;
+        var index;
+        for (var i = 0; i < part_num; i++) {
+            var this_part_start = cached_data[level][i].start;
+            var this_part_end = cached_data[level][i].end;
+            if (cache_start >= this_part_start && cache_start + length <= this_part_end) {
+                found = true;
+                index = i;
+                break;
+            }
+        }
+        if (found === false) {
+            break;
+        }
+        var this_part_start = cached_data[level][index].start;
+        var this_part_end = cached_data[level][index].end;
+        var this_part_data = cached_data[level][index].data;  // Uint8Array
+        var cache_length = this_part_data.length;
+        var cache_point_num = cache_length / 4 / VARIABLE_NUM;
+        cache_start -= this_part_start;
+        for (var i = 0; i < VARIABLE_NUM; i++) {
+            var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
+            var byte_length = length * 4;
+            var response_start_byte = i * length * 4;
+            response_bytes.set(this_part_data.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
+        }
+        return length * 4 * VARIABLE_NUM;
+    }
+    var json_data = {
+        start: start,
+        end: end,
+        step: step
+    };
+    json_data = stringToHex(JSON.stringify(json_data));
+    var url = BASE_URL + '/' + json_data;
+    var response_data = await new Promise((resolve) => {
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        request.timeout = 50;
+        var onerror = () => {
+            console.log('onerror');
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.responseType = 'arraybuffer';
+            request.timeout = 50;
+            request.onload = function () {
+                console.log('onload');
+                if (request.status === 200) {
+                    resolve(request.response);
+                } else {
+                    onerror();
+                }
+            };
+            request.onerror = onerror;
+            request.ontimeout = onerror;
+            request.send();
+        }
+        request.onload = function () {
+            if (request.status === 200) {
+                resolve(request.response);
+            } else {
+                onerror();
+            }
+        };
+        request.onerror = onerror;
+        request.ontimeout = onerror;
+        request.send();
+        current_request_promise_resolve = resolve;
+    });
+    // TODO: when timeout, not stop the previous request, just start a new request, whoever
+    //       finished first can resolve
+    var response_length = response_data.byteLength;
+    shared_bytes.set(new Uint8Array(response_data), 0);
+    return response_length;
+    // return await access_data(start, end, step, window_size);
 };
 
 

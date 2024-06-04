@@ -23,7 +23,7 @@
  *  6. 上述的数组, 都是连续的二进制数据, 储存 float32, 就是 4 字节, 使用 Uint8Array
  *  7. 目前不会对同一批次中需要缓存的数据做优先级区分, 目前使用 http 请求, 将来可能会使用 websocket, 并进行优先级
  *     区分
- *  8. 每次请求数据, 如果缓存中有, 直接返回, 如果没有, 发送一个单独的 http 请求, 获取当前数据
+ *  8. 每次请求数据, 如果缓存中有, 直接返回, 如果没有, 发送一个阻塞的 http 请求, 获取当前数据
  */
 
 var cached_data = {};
@@ -38,6 +38,11 @@ var VARIABLE_NUM;
 const MAX_CACHE_ALL_SIZE = 200 * 1000 * 1000; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
 var MAX_LEVEL = -1;
 var MAX_CACHE_ALL_LEVEL = -1;
+
+var current_request_start = -1;
+var current_request_end = -1;
+var current_request_step = -1;
+var current_request_promise_resolve = null;
 
 
 var do_whole_level_cache = async () => {
@@ -91,6 +96,7 @@ var do_whole_level_cache = async () => {
         if (response_data === -1) {
             continue;
         }
+        // TODO: 检查是否能用来完成当前的请求
         whole_level_caches[i] = new Uint8Array(response_data);
         current--;
     }
@@ -113,7 +119,32 @@ var cache_init = () => {
 
 
 var access_data_2 = async (start, end, step, window_size) => {
+    current_request_start = start;
+    current_request_end = end;
+    current_request_step = step;
     var level = Math.round(Math.log2(step));
+    // 1. 检查 whole_level_caches 是否能满足需求
+    if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
+        var this_level = whole_level_caches[level];
+        var length = Math.floor((end - 1 - start) / step);
+        var response_bytes = shared_bytes;
+        var cache_bytes = new Uint8Array(this_level);
+        var cache_length = cache_bytes.length;
+        var cache_point_num = cache_length / 4 / VARIABLE_NUM;
+        var cache_start = Math.floor(start / step);
+        if(cache_start < 0) {
+            cache_start = 0;
+        }
+        var cache_end = cache_start + length; // actual end plus 1
+        for (var i = 0; i < VARIABLE_NUM; i++) {
+            var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
+            var byte_length = length * 4;
+            var response_start_byte = i * length * 4;
+            response_bytes.set(cache_bytes.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
+        }
+        return length*4*VARIABLE_NUM;
+    }
+    return await access_data(start, end, step, window_size);
 };
 
 
@@ -172,7 +203,7 @@ var main_msg_listener = async (value) => {
             var end = json_data.end;
             var step = json_data.step;
             var window_size = json_data.window_size;
-            returned_value = await access_data(start, end, step, window_size);
+            returned_value = await access_data_2(start, end, step, window_size);
         } else if (this_value === 1) {
             // 主线程获取统计信息, 暂定
             returned_value = 1;

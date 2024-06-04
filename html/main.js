@@ -119,6 +119,13 @@ var create_label_callback = (index) => {
         if (element.checked) {
             VARIABLE_SHOW[tmp] = true;
         } else {
+            // not prefer to perform like this, just to prevent the bug when there is no variables
+            // will remove later, because will add unselect all button
+            const trueCount = VARIABLE_SHOW.filter(value => value).length;
+            if(trueCount === 1) {
+                element.checked = true;
+                return;
+            }
             VARIABLE_SHOW[tmp] = false;
         }
         myChart.destroy();

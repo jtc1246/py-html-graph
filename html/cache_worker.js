@@ -58,7 +58,7 @@ var do_whole_level_cache = async () => {
             start = 0;
             end = TOTAL_DATA_POINTS;
         } else {
-            start = step / 2;
+            start = - step / 2;
             end = fix_up_with_remainder(TOTAL_DATA_POINTS, step, step / 2) + 1;
         }
         var json_data = {
@@ -126,14 +126,14 @@ var access_data_2 = async (start, end, step, window_size) => {
     // 1. 检查 whole_level_caches 是否能满足需求
     if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
         var this_level = whole_level_caches[level];
-        var length = Math.floor((end - 1 - start) / step);
+        var length = Math.floor((end - 1 - start) / step)+1;
         var response_bytes = shared_bytes;
         var cache_bytes = new Uint8Array(this_level);
         var cache_length = cache_bytes.length;
         var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        var cache_start = Math.floor(start / step);
-        if(cache_start < 0) {
-            cache_start = 0;
+        var cache_start = Math.floor(start / step)+1;
+        if(level == 0) {
+            cache_start = start;
         }
         var cache_end = cache_start + length; // actual end plus 1
         for (var i = 0; i < VARIABLE_NUM; i++) {

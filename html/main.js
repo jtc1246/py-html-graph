@@ -70,10 +70,53 @@ window.addEventListener('wheel', (event) => {
 
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
+    // console.log(getMousePosition());
+    var mouse_x_value = getMousePosition();
+    var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
+    // console.log(mouse_left_ratio);
+    if(mouse_left_ratio<0){
+        mouse_left_ratio = 0;
+    }
+    if(mouse_left_ratio>1){
+        mouse_left_ratio = 1;
+    }
+    mouse_left_ratio = 10000 + Math.round(mouse_left_ratio * 10000);
+    Atomics.store(main_to_worker_signal, 0, mouse_left_ratio);
+    Atomics.notify(main_to_worker_signal, 0);
+    while (true) {
+        var signal = Atomics.load(worker_to_main_signal, 0);
+        if (signal === 1) {
+            break;
+        }
+    }
+    Atomics.store(worker_to_main_signal, 0);
 });
 
 window.addEventListener('wheel', function (event) {
+    if(mouseX!==0){
+        mouseX = event.clientX;
+        return;
+    }
     mouseX = event.clientX;
+    var mouse_x_value = getMousePosition();
+    var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
+    // console.log(mouse_left_ratio);
+    if(mouse_left_ratio<0){
+        mouse_left_ratio = 0;
+    }
+    if(mouse_left_ratio>1){
+        mouse_left_ratio = 1;
+    }
+    mouse_left_ratio = 10000 + Math.round(mouse_left_ratio * 10000);
+    Atomics.store(main_to_worker_signal, 0, mouse_left_ratio);
+    Atomics.notify(main_to_worker_signal, 0);
+    while (true) {
+        var signal = Atomics.load(worker_to_main_signal, 0);
+        if (signal === 1) {
+            break;
+        }
+    }
+    Atomics.store(worker_to_main_signal, 0);
 });
 
 if (totalDataPoints < 5) {
@@ -1066,7 +1109,7 @@ function handle_wheel(event) {
         }
     }
     if (action === ACTION_UPDOWN) {
-        ratio *= Math.pow(1.005, y);
+        ratio *= Math.pow(1.0025, y);
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {
@@ -1131,7 +1174,7 @@ function handle_x_drag(moved_x) {
         }
     }
     if (action === ACTION_UPDOWN) {
-        ratio *= Math.pow(1.005, y);
+        ratio *= Math.pow(1.0025, y);
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {

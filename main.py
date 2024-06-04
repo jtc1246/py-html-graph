@@ -200,9 +200,9 @@ class Request(BaseHTTPRequestHandler):
             json_data = json.loads(hexToStr(data))
             print('preload: ', end='')
             print(json_data)
-            if(random.randint(0,99)>90):
-                print('ignored')
-                sleep(100)
+            # if(random.randint(0,99)>90):
+            #     print('ignored')
+            #     sleep(100)
             start = json_data['start']
             end = json_data['end']
             step = json_data['step']

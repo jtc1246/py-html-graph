@@ -42,6 +42,7 @@ var MAX_CACHE_ALL_LEVEL = -1;
 var current_request_start = -1;
 var current_request_end = -1;
 var current_request_step = -1;
+var mouse_position = 0.5;
 var current_request_promise_resolve = null;
 
 
@@ -295,6 +296,10 @@ var main_msg_listener = async (value) => {
             // 主线程获取统计信息, 暂定
             returned_value = 1;
             console.log("Statistics printed.");
+        } else if (this_value >= 10000){
+            mouse_position = (this_value - 10000) / 10000;
+            console.log("Mouse position: ", mouse_position);
+            returned_value = 1;
         } else {
             throw "Unknown signal: " + this_value;
         }

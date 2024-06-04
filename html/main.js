@@ -238,7 +238,8 @@ function createData() {
                 w2m: wtom_array,
                 shared_bytes: shared_bytes,
                 base_url: preload_and_cache_base_url,
-                total_data_points: totalDataPoints
+                total_data_points: totalDataPoints,
+                variable_num: VARIABLE_NUM
             });
             cache_worker.onmessage = (e) => {
                 resolve(null);

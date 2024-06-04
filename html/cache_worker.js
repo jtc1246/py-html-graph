@@ -11,12 +11,110 @@
       worker 写入二进制数据, 在当前协议下, 不会同时写入或读取, 不需要用 Atomics
 */
 
+/** 缓存策略:
+ *  1. 整体上缩放的优先级要高于左右移动, 缩放明显可以比左右移动更快
+ *  2. 小于一定大小的前几个 level, 全部缓存
+ *  3. 需要将每一个 level 每一个区域的数据根据与当前显示区域的"距离" (到达那需要操作的时间) 进行划分等级, 
+ *     距离越近, 等级越低, 优先级越高
+ *  4. 在一定等级 (暂定常数A) 以内, 如果没有就要缓存, 在一定等级之内 (暂定常数B), 有了不会删, 但是不会去单独缓存,
+ *     超过B等级, 就会删除
+ *  5. 缓存的数据库是一个字典, key 为 level, value: 对于全部缓存的level, 是一个数组, 对于部分缓存的 level,
+ *     分成多个区域, 每个区域有最大值、最小值、数据
+ *  6. 上述的数组, 都是连续的二进制数据, 储存 float32, 就是 4 字节, 使用 Uint8Array
+ *  7. 目前不会对同一批次中需要缓存的数据做优先级区分, 目前使用 http 请求, 将来可能会使用 websocket, 并进行优先级
+ *     区分
+ *  8. 每次请求数据, 如果缓存中有, 直接返回, 如果没有, 发送一个单独的 http 请求, 获取当前数据
+ */
+
 var cached_data = {};
+var whole_level_caches = {};
 var shared_bytes = null; // 长度为 1MB, Uint8Array
 var main_to_worker_signal = null; // 长度为 4, Int32Array
 var worker_to_main_signal = null; // 长度为 4, Int32Array
-var base_url; // 获取数据的链接
-var total_data_points;
+var BASE_URL; // 获取数据的链接
+var TOTAL_DATA_POINTS;
+var VARIABLE_NUM;
+
+const MAX_CACHE_ALL_SIZE = 200 * 1000 * 1000; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
+var MAX_LEVEL = -1;
+var MAX_CACHE_ALL_LEVEL = -1;
+
+
+var do_whole_level_cache = async () => {
+    var current = MAX_LEVEL;
+    for (; ;) {
+        if (current < MAX_CACHE_ALL_LEVEL) {
+            break;
+        }
+        var i = current;
+        var step = Math.pow(2, i);
+        var start, end;
+        if (i == 0) {
+            start = 0;
+            end = TOTAL_DATA_POINTS;
+        } else {
+            start = step / 2;
+            end = fix_up_with_remainder(TOTAL_DATA_POINTS, step, step / 2) + 1;
+        }
+        var json_data = {
+            start: start,
+            end: end,
+            step: step
+        };
+        json_data = stringToHex(JSON.stringify(json_data));
+        var url = BASE_URL + '/' + json_data;
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        var estimated_size = (end - start) / step * VARIABLE_NUM * 4;
+        var timeout = estimated_size / 10 / 1000; // ms, 10MB/s
+        if (timeout < 200) {
+            timeout = 200;
+        }
+        request.timeout = timeout;
+        var response_data = await new Promise((resolve) => {
+            request.onload = () => {
+                if (request.status === 200) {
+                    resolve(request.response);
+                } else {
+                    resolve(-1);
+                }
+            };
+            request.onerror = () => {
+                resolve(-1);
+            };
+            request.ontimeout = () => {
+                resolve(-1);
+            };
+            request.send();
+        });
+        if (response_data === -1) {
+            continue;
+        }
+        whole_level_caches[i] = new Uint8Array(response_data);
+        current--;
+    }
+};
+
+
+var cache_init = () => {
+    MAX_LEVEL = Math.floor(Math.log2(TOTAL_DATA_POINTS / 40));
+    if (MAX_LEVEL < 0) {
+        MAX_LEVEL = 0;
+    }
+    MAX_CACHE_ALL_LEVEL = Math.floor(Math.log2(TOTAL_DATA_POINTS / (MAX_CACHE_ALL_SIZE / 4 / VARIABLE_NUM)));
+    if (MAX_CACHE_ALL_LEVEL < 0) {
+        MAX_CACHE_ALL_LEVEL = 0;
+    }
+    console.log("Max level: ", MAX_LEVEL);
+    console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
+    do_whole_level_cache();
+};
+
+
+var access_data_2 = async (start, end, step, window_size) => {
+    var level = Math.round(Math.log2(step));
+};
 
 
 var access_data = async (start, end, step, window_size) => {
@@ -27,7 +125,7 @@ var access_data = async (start, end, step, window_size) => {
         step: step
     };
     json_data = stringToHex(JSON.stringify(json_data));
-    var url = base_url + '/' + json_data;
+    var url = BASE_URL + '/' + json_data;
 
     var response_data = await new Promise((resolve, reject) => {
         var request = new XMLHttpRequest();
@@ -58,7 +156,7 @@ var main_msg_listener = async (value) => {
         } else if (this_value === -2) {
             // TODO: change this to async, and retry when failed
             var request = new XMLHttpRequest();
-            request.open('GET', base_url + '/minmax', false);
+            request.open('GET', BASE_URL + '/minmax', false);
             request.send();
             var response_data = base64ToArrayBuffer(request.responseText);
             var responseArray = new Uint8Array(response_data);
@@ -75,6 +173,10 @@ var main_msg_listener = async (value) => {
             var step = json_data.step;
             var window_size = json_data.window_size;
             returned_value = await access_data(start, end, step, window_size);
+        } else if (this_value === 1) {
+            // 主线程获取统计信息, 暂定
+            returned_value = 1;
+            console.log("Statistics printed.");
         } else {
             throw "Unknown signal: " + this_value;
         }
@@ -92,9 +194,11 @@ onmessage = (e) => {
     shared_bytes = new Uint8Array(e.data.shared_bytes);
     main_to_worker_signal = new Int32Array(e.data.m2w);
     worker_to_main_signal = new Int32Array(e.data.w2m);
-    base_url = e.data.base_url;
-    total_data_points = e.data.total_data_points;
+    BASE_URL = e.data.base_url;
+    TOTAL_DATA_POINTS = e.data.total_data_points;
+    VARIABLE_NUM = e.data.variable_num;
     Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
+    cache_init();
     postMessage(0);
 };
 
@@ -128,3 +232,11 @@ var remote_print = (msg) => {
     request.open('GET', url, true);
     request.send();
 }
+
+var fix_up_with_remainder = (num, multiple, remainder) => {
+    var tmp = num % multiple;
+    if (tmp <= remainder) {
+        return Math.round(num - tmp + remainder);
+    }
+    return Math.round(num - tmp + multiple + remainder);
+};

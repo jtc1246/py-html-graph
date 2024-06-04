@@ -16,6 +16,7 @@ var shared_bytes = null; // 长度为 1MB, Uint8Array
 var main_to_worker_signal = null; // 长度为 4, Int32Array
 var worker_to_main_signal = null; // 长度为 4, Int32Array
 var base_url; // 获取数据的链接
+var total_data_points;
 
 
 var access_data = async (start, end, step, window_size) => {
@@ -92,6 +93,7 @@ onmessage = (e) => {
     main_to_worker_signal = new Int32Array(e.data.m2w);
     worker_to_main_signal = new Int32Array(e.data.w2m);
     base_url = e.data.base_url;
+    total_data_points = e.data.total_data_points;
     Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
     postMessage(0);
 };
@@ -116,4 +118,13 @@ function stringToHex(str) {
         hex += byte.toString(16).padStart(2, '0');
     }
     return hex;
+}
+
+var remote_print = (msg) => {
+    var request = new XMLHttpRequest();
+    msg = stringToHex(msg);
+    var url = '/msg/' + msg;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.send();
 }

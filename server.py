@@ -8,6 +8,7 @@ import sys
 import os
 from mySecrets import hexToStr
 from threading import Lock
+import ssl
 
 if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
     with open('./html/main.html', 'r') as f:
@@ -24,16 +25,16 @@ if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
         stylejs = f.read()
     with open('./html/axis.js', 'r') as f:
         axisjs = f.read()
-    # with open('./html/data_worker.js', 'r') as f:
-    #     worker = f.read()
-    # worker = strToBase64(worker)
+    with open('./html/cache_worker.js', 'r') as f:
+        worker = f.read()
+    worker = strToBase64(worker)
     html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
     html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
     html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
     html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
     html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
     html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
-    # html = html.replace("'$workerb64$'", f"'{worker}'")
+    html = html.replace("'$cacheworkerbase64$'", f"'{worker}'")
     with open('./html/index.html', 'w') as f:
         f.write(html)
     os._exit(0)
@@ -119,8 +120,12 @@ class Request(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
         pass
 
+cert_path = './html/certificate.crt'
+key_path = './html/private.key'
 
 server = ThreadingHTTPServer(('0.0.0.0', 9010), Request)
+# server.socket = ssl.wrap_socket(server.socket, certfile=cert_path, keyfile=key_path, server_side=True)
+
 start_new_thread(server.serve_forever, ())
 print(f'Listening at 0.0.0.0:9010, http://127.0.0.1:9010')
 while True:

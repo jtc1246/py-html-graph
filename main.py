@@ -7,6 +7,7 @@ from mySecrets import hexToStr
 import json
 from math import floor
 from myBasics import binToBase64
+import ssl
 
 
 def generate_data_10_500k() -> np.ndarray:
@@ -223,8 +224,11 @@ class Request(BaseHTTPRequestHandler):
     def log_message(self, *args) -> None:
         pass
 
+cert_path = './html/certificate.crt'
+key_path = './html/private.key'
 
 server = ThreadingHTTPServer(('0.0.0.0', 9012), Request)
+# server.socket = ssl.wrap_socket(server.socket, certfile=cert_path, keyfile=key_path, server_side=True)
 start_new_thread(server.serve_forever, ())
 print('Server started')
 while True:

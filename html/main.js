@@ -76,6 +76,21 @@ window.addEventListener('wheel', function (event) {
     mouseX = event.clientX;
 });
 
+if (totalDataPoints < 5) {
+    document.getElementById('main').innerHTML = "Data point num can't be less than 5!";
+    document.getElementById('main').style.color = 'red';
+    document.getElementById('main').style.overflow = 'visible';
+    document.getElementById('main').style.fontSize = '4vw';
+    document.getElementById('main').style.textAlign = 'center';
+    document.getElementById('main').style.paddingTop = '10vw';
+    throw new Error();
+}
+
+if (totalDataPoints < viewWindow) {
+    viewWindow = totalDataPoints - 1;
+    fake_window_size = viewWindow;
+}
+
 var data;
 var global_max = Number.MIN_VALUE;
 var global_min = Number.MAX_VALUE;
@@ -222,7 +237,8 @@ function createData() {
                 m2w: mtow_array,
                 w2m: wtom_array,
                 shared_bytes: shared_bytes,
-                base_url: preload_and_cache_base_url
+                base_url: preload_and_cache_base_url,
+                total_data_points: totalDataPoints
             });
             cache_worker.onmessage = (e) => {
                 resolve(null);
@@ -332,13 +348,13 @@ createData().then((dataSets) => {
         find_global_min_max(data.datasets);
     }
     if (data_loading_mode === MODE_PRELOAD_AND_CACHE) {
-        console.log('Worker ready');
+        // console.log('Worker ready');
         Atomics.store(main_to_worker_signal, 0, -1);
         Atomics.notify(main_to_worker_signal, 0);
         while (true) {
             var signal = Atomics.load(worker_to_main_signal, 0);
             if (signal === -1) {
-                console.log('Worker responded');
+                // console.log('Worker responded');
                 break;
             }
         }
@@ -348,7 +364,7 @@ createData().then((dataSets) => {
         while (true) {
             var signal = Atomics.load(worker_to_main_signal, 0);
             if (signal === -2) {
-                console.log('Min max value got');
+                // console.log('Min max value got');
                 break;
             }
         }
@@ -357,7 +373,7 @@ createData().then((dataSets) => {
         var max = view.getFloat32(4, false);
         global_max = max;
         global_min = min;
-        console.log(`Global max: ${global_max}, Global min: ${global_min}`);
+        // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     }
     all_finished = true;
     console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
@@ -1042,7 +1058,7 @@ function handle_wheel(event) {
         }
     }
     if (action === ACTION_UPDOWN) {
-        ratio *= Math.pow(1.01, y);
+        ratio *= Math.pow(1.005, y);
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {
@@ -1107,7 +1123,7 @@ function handle_x_drag(moved_x) {
         }
     }
     if (action === ACTION_UPDOWN) {
-        ratio *= Math.pow(1.01, y);
+        ratio *= Math.pow(1.005, y);
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {

@@ -5,9 +5,12 @@
    3. main_to_worker -2 用于初始化, 获取基本信息, 比如 最大值、最小值, worker 回复 -2
    4. main_to_worker 负的其它值, 用于实际获取数据 (值是json字符串长度的相反数), worker 回复 bytes 长
       度 (一定大于0) 
-   5. 创建时 主线程需要postMessage 共享的 arraybuffer, worker postMessage仅告知主线程创建成功
-   6. 主线程中修改了 signal 之后需要调用 Atomics.notify, worker中修改了不用, 主线程通过 while 循环获取
-   7. shared_bytes 用于 worker 向主线程传回结果, 和主线程中输入命令, 主线程会写入 json 字符串, 
+   5. main_to_worker 10000~20000, 用于传输鼠标位置, 就用这个值表示, 没有其它数据, 10000 代表在最左边, 
+      20000 表示在最右边, worker 需要回复 1
+   6. main_to_worker 1 用于输出 worker 的统计信息, worker 自身输出, 不反回, 没有返回数据, worker 回复 1
+   7. 创建时 主线程需要postMessage 共享的 arraybuffer, worker postMessage仅告知主线程创建成功
+   8. 主线程中修改了 signal 之后需要调用 Atomics.notify, worker中修改了不用, 主线程通过 while 循环获取
+   9. shared_bytes 用于 worker 向主线程传回结果, 和主线程中输入命令, 主线程会写入 json 字符串, 
       worker 写入二进制数据, 在当前协议下, 不会同时写入或读取, 不需要用 Atomics
 */
 
@@ -18,14 +21,32 @@
  *     距离越近, 等级越低, 优先级越高
  *  4. 在一定等级 (暂定常数A) 以内, 如果没有就要缓存, 在一定等级之内 (暂定常数B), 有了不会删, 但是不会去单独缓存,
  *     超过B等级, 就会删除
- *  5. 缓存的数据库是一个字典, key 为 level, value: 对于全部缓存的level, 是一个数组, 对于部分缓存的 level,
- *     分成多个区域, 每个区域有最大值、最小值、数据, 且都是 递增的、无重合的、不连续的
+ *  5. 缓存的数据库是一个字典, key 为 level, value: 一个数组, 范围是当前请求所有的 UNCNECESSARY 范围,
+ *     创建时是空白的, 收到数据后在对应的位置写入, 并且还有一个 uint8array (每个数据点只占一个字节) 记录状态
  *  6. 上述的数组, 都是连续的二进制数据, 储存 float32, 就是 4 字节, 使用 Uint8Array
  *  7. 目前不会对同一批次中需要缓存的数据做优先级区分, 目前使用 http 请求, 将来可能会使用 websocket, 并进行优先级
  *     区分
  *  8. 每次请求数据, 如果缓存中有, 直接返回, 如果没有, 发送一个阻塞的 http 请求, 获取当前数据
  */
 
+/** 缓存更新流程:
+ *  一、针对用户请求新的数据 (即图表范围变化或鼠标移动)
+ *  1. 每次请求之后, 重新计算整个缓存范围 (包括 required 和 unnecessary), 这时需同时保留旧的和新的
+ *  2. 根据新旧缓存范围的变化, 移动 cached_data 中的数据 (主要是使index匹配)
+ *  3. 检查 cached_data 中, 属于 required 但是状态为 FREE 的, 发出 http 请求, 并将状态改为 REQUESTING
+ *     这里通过一个一个遍历 cached_data 中状态的 uint8array 实现, 整理出不同的连续范围
+ * 
+ *  二、针对每次收到 http 请求的数据
+ *  1. 如果成功 (200), 根据缓存的范围, 将数据写入对应的位置, 并将状态改为 LOADED, 超出 UNNECESSARY 范围的丢弃
+ *  2. 如果失败 (timeout error 非200), 把对应区域的状态标记为 FREE, 对该level重新进行 一(3) 的流程
+ */
+
+const CACHE_LOADED = 1;
+const CACHE_REQUESTING = 2;
+const CACHE_FREE = 3;
+
+var required_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
+var unnecessary_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
 var cached_data = {};
 var whole_level_caches = {};
 var shared_bytes = null; // 长度为 1MB, Uint8Array
@@ -42,6 +63,9 @@ var MAX_CACHE_ALL_LEVEL = -1;
 var current_request_start = -1;
 var current_request_end = -1;
 var current_request_step = -1;
+var current_request_level = -1;
+var current_window_max = -1;
+var has_request = false;
 var mouse_position = 0.5;
 var current_request_promise_resolve = null;
 
@@ -99,6 +123,11 @@ var do_whole_level_cache = async () => {
         }
         // TODO: 检查是否能用来完成当前的请求
         whole_level_caches[i] = new Uint8Array(response_data);
+        if (has_request && current_request_level === i) {
+            current_request_promise_resolve(1);
+            has_request = false;
+            current_request_promise_resolve = null;
+        }
         current--;
     }
 };
@@ -115,18 +144,54 @@ var cache_init = () => {
     }
     console.log("Max level: ", MAX_LEVEL);
     console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
-    for (var i = 0; i < MAX_LEVEL; i++) {
-        cached_data[i] = [];
-    }
+    // for (var i = 0; i < MAX_LEVEL; i++) {
+    //     cached_data[i] = [];
+    // }
     do_whole_level_cache();
 };
 
+var get_new_required_range = () => {
+    var new_range = {};
+    var start = current_request_start - (current_request_end - current_request_start)
+    var end = current_request_end + (current_request_end - current_request_start);
+    start = Math.round(start / Math.pow(2, current_request_level));
+    end = Math.round(end / Math.pow(2, current_request_level));
+    new_range[current_request_level] = {
+        start: start,
+        end: end
+    };
+    for (var i = current_request_level - 1; i >= current_request_level - 4; i--) {
+        if (i < 0) {
+            break;
+        }
+        var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
+        var start = mouse_value - (0.5+mouse_position) * window_max * Math.pow(2, i);
+        var end = mouse_value + (1.5-mouse_position) * window_max * Math.pow(2, i);
+        start = Math.round(start/Math.pow(2, i));
+        end = Math.round(end/Math.pow(2, i));
+        new_range[i] = {
+            start: start,
+            end: end
+        };
+    }
+}
 
-var access_data_2 = async (start, end, step, window_size) => {
+var update_cache = (mouse_move_only) => {
+    if (current_request_level === -1) {
+        // 这代表是图都没加载好的时候鼠标在移动, 什么都不要做
+        return;
+    }
+}
+
+
+var access_data_2 = async (start, end, step, window_size, window_max) => {
     current_request_start = start;
     current_request_end = end;
     current_request_step = step;
+    current_window_max = window_max;
     var level = Math.round(Math.log2(step));
+    current_request_level = level;
+    has_request = true;
     var length = Math.floor((end - 1 - start) / step) + 1;
     var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
     if (level == 0) {
@@ -151,40 +216,41 @@ var access_data_2 = async (start, end, step, window_size) => {
             var response_start_byte = i * length * 4;
             response_bytes.set(cache_bytes.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
+        has_request = false;
         return length * 4 * VARIABLE_NUM;
     }
     // 2. 检查 cached_data 是否能满足需求
-    for (; cached_data[level].length !== 0;) {
-        // 为了使用 break
-        var part_num = cached_data[level].length;
-        var found = false;
-        var index;
-        for (var i = 0; i < part_num; i++) {
-            var this_part_start = cached_data[level][i].start;
-            var this_part_end = cached_data[level][i].end;
-            if (cache_start >= this_part_start && cache_start + length <= this_part_end) {
-                found = true;
-                index = i;
-                break;
-            }
-        }
-        if (found === false) {
-            break;
-        }
-        var this_part_start = cached_data[level][index].start;
-        var this_part_end = cached_data[level][index].end;
-        var this_part_data = cached_data[level][index].data;  // Uint8Array
-        var cache_length = this_part_data.length;
-        var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        cache_start -= this_part_start;
-        for (var i = 0; i < VARIABLE_NUM; i++) {
-            var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
-            var byte_length = length * 4;
-            var response_start_byte = i * length * 4;
-            response_bytes.set(this_part_data.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
-        }
-        return length * 4 * VARIABLE_NUM;
-    }
+    // for (; cached_data[level].length !== 0;) {
+    //     // 为了使用 break
+    //     var part_num = cached_data[level].length;
+    //     var found = false;
+    //     var index;
+    //     for (var i = 0; i < part_num; i++) {
+    //         var this_part_start = cached_data[level][i].start;
+    //         var this_part_end = cached_data[level][i].end;
+    //         if (cache_start >= this_part_start && cache_start + length <= this_part_end) {
+    //             found = true;
+    //             index = i;
+    //             break;
+    //         }
+    //     }
+    //     if (found === false) {
+    //         break;
+    //     }
+    //     var this_part_start = cached_data[level][index].start;
+    //     var this_part_end = cached_data[level][index].end;
+    //     var this_part_data = cached_data[level][index].data;  // Uint8Array
+    //     var cache_length = this_part_data.length;
+    //     var cache_point_num = cache_length / 4 / VARIABLE_NUM;
+    //     cache_start -= this_part_start;
+    //     for (var i = 0; i < VARIABLE_NUM; i++) {
+    //         var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
+    //         var byte_length = length * 4;
+    //         var response_start_byte = i * length * 4;
+    //         response_bytes.set(this_part_data.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
+    //     }
+    //     return length * 4 * VARIABLE_NUM;
+    // }
     var json_data = {
         start: start,
         end: end,
@@ -231,39 +297,11 @@ var access_data_2 = async (start, end, step, window_size) => {
     //       finished first can resolve
     var response_length = response_data.byteLength;
     shared_bytes.set(new Uint8Array(response_data), 0);
+    has_request = false;
+    current_request_promise_resolve = null;
     return response_length;
     // return await access_data(start, end, step, window_size);
 };
-
-
-var access_data = async (start, end, step, window_size) => {
-    // 这里写入 shared_bytes, 返回长度
-    var json_data = {
-        start: start,
-        end: end,
-        step: step
-    };
-    json_data = stringToHex(JSON.stringify(json_data));
-    var url = BASE_URL + '/' + json_data;
-
-    var response_data = await new Promise((resolve, reject) => {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true); // true 使其异步
-        request.responseType = 'arraybuffer';
-        request.onload = function () {
-            resolve(request.response);
-        };
-        request.onerror = function () {
-            reject(new Error('Network error'));
-        };
-        request.send();
-    });
-
-    var response_length = response_data.byteLength;
-    shared_bytes.set(new Uint8Array(response_data), 0);
-    return response_length;
-};
-
 
 
 var main_msg_listener = async (value) => {
@@ -291,14 +329,15 @@ var main_msg_listener = async (value) => {
             var end = json_data.end;
             var step = json_data.step;
             var window_size = json_data.window_size;
-            returned_value = await access_data_2(start, end, step, window_size);
+            var window_max = json_data.window_max;
+            returned_value = await access_data_2(start, end, step, window_size, window_max);
         } else if (this_value === 1) {
             // 主线程获取统计信息, 暂定
             returned_value = 1;
             console.log("Statistics printed.");
-        } else if (this_value >= 10000){
+        } else if (this_value >= 10000) {
             mouse_position = (this_value - 10000) / 10000;
-            console.log("Mouse position: ", mouse_position);
+            // console.log("Mouse position: ", mouse_position);
             returned_value = 1;
         } else {
             throw "Unknown signal: " + this_value;

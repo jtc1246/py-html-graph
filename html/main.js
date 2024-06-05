@@ -92,9 +92,12 @@ document.addEventListener('mousemove', function (event) {
     Atomics.store(worker_to_main_signal, 0);
 });
 
-window.addEventListener('wheel', function (event) {
-    if(mouseX!==0){
-        mouseX = event.clientX;
+chart_element.addEventListener('wheel', function (event) {
+    // if(mouseX!==0){
+    //     mouseX = event.clientX;
+    //     return;
+    // }
+    if(mouseX===event.clientX){
         return;
     }
     mouseX = event.clientX;
@@ -702,7 +705,8 @@ function createChart() {
             start: start,
             end: end_plus_one,
             step: step,
-            window_size: viewWindow
+            window_size: viewWindow,
+            window_max: window_max
         }
         json_data = JSON.stringify(json_data);
         var string_length = json_data.length;
@@ -923,7 +927,8 @@ function createChart_for_show_hide_variable() {
             start: start,
             end: end_plus_one,
             step: step,
-            window_size: viewWindow
+            window_size: viewWindow,
+            window_max: window_max
         }
         json_data = JSON.stringify(json_data);
         var string_length = json_data.length;
@@ -1109,7 +1114,14 @@ function handle_wheel(event) {
         }
     }
     if (action === ACTION_UPDOWN) {
+        // 防止缩放过快来不及缓存
+        if(Math.pow(1.0025, y)>1.5){
+            ratio *=1.5
+        }else if(Math.pow(1.0025, y)<2/3){
+            ratio *=2/3
+        }else{
         ratio *= Math.pow(1.0025, y);
+        }
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {
@@ -1174,7 +1186,14 @@ function handle_x_drag(moved_x) {
         }
     }
     if (action === ACTION_UPDOWN) {
+        // 防止缩放过快来不及缓存
+        if(Math.pow(1.0025, y)>1.5){
+            ratio *=1.5
+        }else if(Math.pow(1.0025, y)<2/3){
+            ratio *=2/3
+        }else{
         ratio *= Math.pow(1.0025, y);
+        }
         var prev_fake_window_size = fake_window_size;
         fake_window_size = origin_window_size * ratio;
         if (fake_window_size < window_min) {

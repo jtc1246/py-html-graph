@@ -206,6 +206,7 @@ class Request(BaseHTTPRequestHandler):
             start = json_data['start']
             end = json_data['end']
             step = json_data['step']
+            transpose = 'tr' in json_data
             selected = []
             for i in range(start, end, step):
                 selected.append(i)
@@ -214,6 +215,8 @@ class Request(BaseHTTPRequestHandler):
             if (selected[-1] > array_10_50m.shape[1] - 1):
                 selected[-1] = array_10_50m.shape[1] - 1
             array = array_10_50m[:, selected]
+            if(transpose):
+                array = array.T
             data = array.tobytes()
             # data = binToBase64(data)
             self.send_response(200)

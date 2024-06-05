@@ -165,8 +165,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * window_max * Math.pow(2, i);
+        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -179,8 +179,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * window_max * Math.pow(2, i);
+        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -233,8 +233,8 @@ var get_new_unnecessary_range = () => {
         if (i < 0) {
             break;
         }
-        var start = current_request_start - window_max * Math.pow(2, i);
-        var end = current_request_end + window_max * Math.pow(2, i);
+        var start = current_request_start - current_window_max * Math.pow(2, i);
+        var end = current_request_end + current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -246,8 +246,8 @@ var get_new_unnecessary_range = () => {
         if(i>MAX_LEVEL) {
             break;
         }
-        var start = current_request_start - window_max * Math.pow(2, i);
-        var end = current_request_end + window_max * Math.pow(2, i);
+        var start = current_request_start - current_window_max * Math.pow(2, i);
+        var end = current_request_end + current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -473,7 +473,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
         request.timeout = 50;
-        var callbacks = create_request_callbacks(request, start_index, end_index, this_level, step);
+        var callbacks = create_request_callbacks(request, start, end, level, step);
         request.onload = callbacks[0];
         request.onerror = callbacks[1];
         request.ontimeout = callbacks[1];
@@ -491,6 +491,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
 }
 
 var update_cache = (mouse_move_only) => {
+    console.log('update_cache');
     if (current_request_level === -1) {
         // 这代表是图都没加载好的时候鼠标在移动, 什么都不要做
         return;

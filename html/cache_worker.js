@@ -43,7 +43,7 @@
 
 const CACHE_LOADED = 1;
 const CACHE_REQUESTING = 2;
-const CACHE_FREE = 3;
+const CACHE_FREE = 0; // new Uint8Array 创建时默认就是 0
 
 var required_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
 var unnecessary_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
@@ -174,6 +174,310 @@ var get_new_required_range = () => {
             end: end
         };
     }
+    for (var i=current_request_level+1; i<=current_request_level+4; i++) {
+        if(i>MAX_LEVEL) {
+            break;
+        }
+        var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
+        var start = mouse_value - (0.5+mouse_position) * window_max * Math.pow(2, i);
+        var end = mouse_value + (1.5-mouse_position) * window_max * Math.pow(2, i);
+        start = Math.round(start/Math.pow(2, i));
+        end = Math.round(end/Math.pow(2, i));
+        new_range[i] = {
+            start: start,
+            end: end
+        };
+    }
+    var all_keys = Object.keys(new_range);
+    for(var i=0; i<all_keys.length; i++) {
+        var key = all_keys[i];
+        if(whole_level_caches[key] !== undefined) {
+            delete new_range[key];
+        }
+    }
+    all_keys = Object.keys(new_range);
+    for(var i=0; i<all_keys.length; i++) {
+        var key = all_keys[i];
+        var max_end = get_level_length(parseInt(key));
+        if(new_range[key].start < 0 && new_range[key].end > max_end){
+            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
+            new_range[key].start = 0;
+            new_range[key].end = max_end;
+            continue;
+        }
+        if(new_range[key].start < 0) {
+            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
+            new_range[key].end = new_range[key].end - new_range[key].start;
+            new_range[key].start = 0;
+        }
+        if(new_range[key].end > max_end) {
+            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
+            new_range[key].start = max_end - (new_range[key].end - new_range[key].start);
+            new_range[key].end = max_end;
+        }
+    }
+    return new_range;
+};
+
+var get_new_unnecessary_range = () => {
+    var new_range = {};
+    var start = current_request_start - (current_request_end - current_request_start)
+    var end = current_request_end + (current_request_end - current_request_start);
+    start = Math.round(start / Math.pow(2, current_request_level));
+    end = Math.round(end / Math.pow(2, current_request_level));
+    new_range[current_request_level] = {
+        start: start,
+        end: end
+    };
+    for (var i = current_request_level - 1; i >= current_request_level - 4; i--) {
+        if (i < 0) {
+            break;
+        }
+        var start = current_request_start - window_max * Math.pow(2, i);
+        var end = current_request_end + window_max * Math.pow(2, i);
+        start = Math.round(start/Math.pow(2, i));
+        end = Math.round(end/Math.pow(2, i));
+        new_range[i] = {
+            start: start,
+            end: end
+        };
+    }
+    for (var i=current_request_level+1; i<=current_request_level+4; i++) {
+        if(i>MAX_LEVEL) {
+            break;
+        }
+        var start = current_request_start - window_max * Math.pow(2, i);
+        var end = current_request_end + window_max * Math.pow(2, i);
+        start = Math.round(start/Math.pow(2, i));
+        end = Math.round(end/Math.pow(2, i));
+        new_range[i] = {
+            start: start,
+            end: end
+        };
+    }
+    var all_keys = Object.keys(new_range);
+    for(var i=0; i<all_keys.length; i++) {
+        var key = all_keys[i];
+        if(whole_level_caches[key] !== undefined) {
+            delete new_range[key];
+        }
+    }
+    all_keys = Object.keys(new_range);
+    for(var i=0; i<all_keys.length; i++) {
+        var key = all_keys[i];
+        if(new_range[key].start < 0) {
+            new_range[key].start = 0;
+        }
+        var max_end = get_level_length(parseInt(key));
+        if(new_range[key].end > max_end) {
+            new_range[key].end = max_end;
+        }
+    }
+    return new_range;
+};
+
+var update_data_range = (old_range, new_range) => {
+    var old_keys = Object.keys(old_range);
+    var new_keys = Object.keys(new_range);
+    for(var i=0;i<old_keys.length;i++){
+        if(new_range[old_keys[i]] === undefined) {
+            delete old_range[old_keys[i]];
+            delete cached_data[old_keys[i]];
+        }
+    }
+    old_keys = Object.keys(old_range);
+    for(var i=0;i<new_keys.length;i++){
+        var key = new_keys[i];
+        if(old_range[key] === undefined) {
+            var length = new_range[key].end - new_range[key].start;
+            var status_array = new Uint8Array(length);
+            var data = new Uint8Array(length * 4 * VARIABLE_NUM);
+            cached_data[key] = {
+                status: status_array,
+                data: data
+            };
+            continue;
+        }
+        var old_start = old_range[key].start;
+        var old_end = old_range[key].end;
+        var new_start = new_range[key].start;
+        var new_end = new_range[key].end;
+        if(new_start >= old_end || old_start >= new_end) {
+            delete cached_data[key];
+            var length = new_range[key].end - new_range[key].start;
+            var status_array = new Uint8Array(length);
+            var data = new Uint8Array(length * 4 * VARIABLE_NUM);
+            cached_data[key] = {
+                status: status_array,
+                data: data
+            };
+            continue;
+        }
+        var shared_start = Math.max(old_start, new_start);
+        var shared_end = Math.min(old_end, new_end);
+        var shared_start_in_old = shared_start - old_start;
+        var shared_start_in_new = shared_start - new_start;
+        var shared_length = shared_end - shared_start;
+        var shared_subarray_data = cached_data[key].data.subarray(shared_start_in_old * 4 * VARIABLE_NUM, (shared_start_in_old + shared_length) * 4 * VARIABLE_NUM);
+        var shared_subarray_status = cached_data[key].status.subarray(shared_start_in_old, shared_start_in_old + shared_length);
+        var new_data_array = new Uint8Array((new_end - new_start) * 4 * VARIABLE_NUM);
+        new_data_array.set(shared_subarray_data, shared_start_in_new * 4 * VARIABLE_NUM);
+        var new_status_array = new Uint8Array(new_end - new_start);
+        new_status_array.set(shared_subarray_status, shared_start_in_new);
+        cached_data[key] = {
+            status: new_status_array,
+            data: new_data_array
+        };
+    }
+};
+
+var create_requests = () => {
+    var all_keys = Object.keys(required_cache_area);
+    for (var j = 0; j < all_keys.length; j++){
+        var unrequested_parts = [];
+        // var inside = false;
+        var current_start = -1;
+        var global_start = required_cache_area[all_keys[j]].start;
+        var global_end = required_cache_area[all_keys[j]].end;
+        var offset = unnecessary_cache_area[all_keys[j]].start;
+        for(var i=global_start; i<global_end; i++){
+            if(current_start === -1){
+                if(cached_data[all_keys[j]].status[i -offset] === CACHE_FREE){
+                    current_start = i;
+                }
+                continue;
+            }
+            if(cached_data[all_keys[j]].status[i-offset] !== CACHE_FREE){
+                unrequested_parts.push([current_start, i]);
+                current_start = -1;
+            }
+        }
+        if(current_start !== -1){
+            unrequested_parts.push([current_start, global_end]);
+        }
+        for (var i=0;i<unrequested_parts.length;i++){
+            var this_start = unrequested_parts[i][0];
+            var this_end = unrequested_parts[i][1];
+            var this_level = parseInt(all_keys[j]);
+            var step = Math.pow(2, this_level);
+            var start_index = this_start;
+            var end_index = this_end;
+            if(this_level !== 0){
+                // 如果是 0, this_start 和 this_end 就是实际的
+                var start = this_start*step - step/2;
+                var end = start + (this_end - this_start - 1)*step+1;
+                this_start = start;
+                this_end = end;
+            }
+            var json_data = {
+                start: this_start,
+                end: this_end,
+                step: step,
+                tr: 1 // transpose
+            };
+            json_data = stringToHex(JSON.stringify(json_data));
+            var url = BASE_URL + '/' + json_data;
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.responseType = 'arraybuffer';
+            request.timeout = 50;
+            var callbacks = create_request_callbacks(request, start_index, end_index, this_level, step);
+            request.onload = callbacks[0];
+            request.onerror = callbacks[1];
+            request.ontimeout = callbacks[1];
+            request.send();
+            cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
+        }
+    }
+};
+
+var create_request_callbacks = (request_, start_, end_, level_, step_) => {
+    var start = start_;
+    var end = end_;
+    var level = level_;
+    var step = step_;
+    var request = request_;
+
+    function on_load() {
+        if(request.status !== 200){
+            on_error();
+            return;
+        }
+        if(unnecessary_cache_area[level] === undefined){
+            return;
+        }
+        var cache_start = unnecessary_cache_area[level].start;
+        var cache_end = unnecessary_cache_area[level].end;
+        if(start >= cache_end || end <= cache_start){
+            return;
+        }
+        var shared_start = Math.max(start, cache_start);
+        var shared_end = Math.min(end, cache_end);
+        var shared_start_in_request = shared_start - start;
+        var shared_start_in_cache = shared_start - cache_start;
+        var shared_length = shared_end - shared_start;
+        var response_data = new Uint8Array(request.response);
+        cached_data[level].data.set(response_data.subarray(shared_start_in_request * 4 * VARIABLE_NUM, (shared_start_in_request + shared_length) * 4 * VARIABLE_NUM), shared_start_in_cache * 4 * VARIABLE_NUM);
+        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
+        // then need to check whether this request data can fulfill the current user request
+        if(level !== current_request_level || has_request === false){
+            return;
+        }
+        var current_start = Math.floor(start / step) + 1;
+        if(level === 0){
+            current_start = start;
+        }
+        var length = Math.floor((end - 1 - start) / step) + 1;
+        var current_end = current_start + length;
+        if(current_start<cache_start || current_end>cache_end){
+            return;
+        }
+        for (var i = current_start; i < current_end; i++){
+            if(cached_data[level].status[i - cache_start] !== CACHE_LOADED){
+                return;
+            }
+        }
+        current_request_promise_resolve(2);
+        has_request = false;
+        current_request_promise_resolve = null;
+    };
+    function on_error() {
+        if(required_cache_area[level] === undefined){
+            return;
+        }
+        var cache_start = required_cache_area[level].start;
+        var cache_end = required_cache_area[level].end;
+        if(start >= cache_end || end <= cache_start){
+            return;
+        }
+        var shared_start = Math.max(start, cache_start);
+        var shared_end = Math.min(end, cache_end);
+        var shared_start_in_cache = shared_start - cache_start;
+        var shared_length = shared_end - shared_start;
+        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_FREE), shared_start_in_cache);
+        // 对 shared_start 到 shared_end 的范围进行重试
+        var retry_start = shared_start*step - step/2;
+        var retry_end = retry_start + (shared_end - shared_start - 1)*step+1;
+        var json_data = {
+            start: retry_start,
+            end: retry_end,
+            step: step,
+            tr: 1 // transpose
+        };
+        json_data = stringToHex(JSON.stringify(json_data));
+        var url = BASE_URL + '/' + json_data;
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.responseType = 'arraybuffer';
+        request.timeout = 50;
+        var callbacks = create_request_callbacks(request, start_index, end_index, this_level, step);
+        request.onload = callbacks[0];
+        request.onerror = callbacks[1];
+        request.ontimeout = callbacks[1];
+        request.send();
+        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
+    }
+    return [on_load, on_error];
 }
 
 var update_cache = (mouse_move_only) => {
@@ -181,6 +485,13 @@ var update_cache = (mouse_move_only) => {
         // 这代表是图都没加载好的时候鼠标在移动, 什么都不要做
         return;
     }
+    required_cache_area = get_new_required_range();
+    if (mouse_move_only === false){
+        var new_unnecessary_area = get_new_unnecessary_range();
+        update_data_range(unnecessary_cache_area, new_unnecessary_area);
+        unnecessary_cache_area = new_unnecessary_area;
+    }
+    create_requests();
 }
 
 
@@ -401,4 +712,15 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp + multiple + remainder);
+};
+
+var get_level_length = (level)=>{
+    if(level === 0) {
+        return TOTAL_DATA_POINTS;
+    }
+    var step = Math.pow(2, level);
+    var start = - step / 2;
+    var end = fix_up_with_remainder(TOTAL_DATA_POINTS, step, step / 2) + 1;
+    var length = Math.floor((end - start -1) / step)+1;
+    return length;
 };

@@ -382,29 +382,35 @@ var create_requests = () => {
             var request = new XMLHttpRequest();
             request.open('GET', url, true);
             request.responseType = 'arraybuffer';
-            request.timeout = 50;
-            var callbacks = create_request_callbacks(request, start_index, end_index, this_level, step);
-            request.onload = callbacks[0];
-            request.onerror = callbacks[1];
-            request.ontimeout = callbacks[1];
+            // request.timeout = 50;
+            var request_id = generate_request_id();
+            ongoing_requests.add(request_id);
+            var callback = create_request_callbacks(request, start_index, end_index, this_level, step, request_id);
+            request.onload = callback;
+            // request.onerror = callbacks[1];
+            // request.ontimeout = callbacks[1];
             request.send();
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
     }
 };
 
-var create_request_callbacks = (request_, start_, end_, level_, step_) => {
+var create_request_callbacks = (request_, start_, end_, level_, step_, request_id_) => {
     var start = start_;
     var end = end_;
     var level = level_;
     var step = step_;
     var request = request_;
+    var request_id = request_id_;
 
     function on_load() {
         if(request.status !== 200){
-            on_error();
             return;
         }
+        if(ongoing_requests.has(request_id) === false){
+            return;
+        }
+        ongoing_requests.delete(request_id);
         if(unnecessary_cache_area[level] === undefined){
             return;
         }
@@ -443,7 +449,10 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         has_request = false;
         current_request_promise_resolve = null;
     };
-    function on_error() {
+    function fixed_interval_request() {
+        if(ongoing_requests.has(request_id) === false){
+            return;
+        }
         if(required_cache_area[level] === undefined){
             return;
         }
@@ -474,11 +483,11 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
-        request.timeout = 50;
-        var callbacks = create_request_callbacks(request, shared_start, shared_end, level, step);
-        request.onload = callbacks[0];
-        request.onerror = callbacks[1];
-        request.ontimeout = callbacks[1];
+        // request.timeout = 50;
+        var callback = create_request_callbacks(request, shared_start, shared_end, level, step, request_id);
+        request.onload = callback;
+        // request.onerror = callbacks[1];
+        // request.ontimeout = callbacks[1];
         request.send();
         // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
         // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
@@ -489,7 +498,8 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
             }
         }
     }
-    return [on_load, on_error];
+    setTimeout(fixed_interval_request, 50);
+    return on_load;
 }
 
 var update_cache = (mouse_move_only) => {
@@ -621,43 +631,6 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     json_data = stringToHex(JSON.stringify(json_data));
     var url = BASE_URL + '/' + json_data;
     var response_data = await new Promise((resolve) => {
-        // var request = new XMLHttpRequest();
-        // request.open('GET', url, true);
-        // ongoing_requests.add(request_id);
-        // request.responseType = 'arraybuffer';
-        // // request.timeout = 50;
-        // // var onerror = () => {
-        // //     // console.log('onerror');
-        // //     var request = new XMLHttpRequest();
-        // //     request.open('GET', url, true);
-        // //     request.responseType = 'arraybuffer';
-        // //     request.timeout = 50;
-        // //     request.onload = function () {
-        // //         console.log('onload');
-        // //         if (request.status === 200) {
-        // //             resolve(request.response);
-        // //         } else {
-        // //             onerror();
-        // //         }
-        // //     };
-        // //     request.onerror = onerror;
-        // //     request.ontimeout = onerror;
-        // //     request.send();
-        // // }
-        // request.onload = function () {
-        //     if (request.status === 200) {
-        //         if(ongoing_requests.has(request_id) === false){
-        //             return;
-        //         }
-        //         ongoing_requests.delete(request_id);
-        //         resolve(request.response);
-        //     } else {
-        //         // onerror();
-        //     }
-        // };
-        // // request.onerror = onerror;
-        // // request.ontimeout = onerror;
-        // request.send();
         var request_id = generate_request_id();
         ongoing_requests.add(request_id);
         for (var i=0;i<3;i++){
@@ -666,15 +639,12 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         }
         current_request_promise_resolve = resolve;
     });
-    // need to add here: resolved by cache request
     if(response_data ===1 || response_data === 2){
         var return_value = access_data_tmp(start, end, step, window_size, window_max);
         has_request = false;
         current_request_promise_resolve = null;
         return return_value;
     }
-    // TODO: when timeout, not stop the previous request, just start a new request, whoever
-    //       finished first can resolve, do later
     var response_length = response_data.byteLength;
     shared_bytes.set(new Uint8Array(response_data), 0);
     has_request = false;
@@ -702,7 +672,6 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         break;
     }
     return response_length;
-    // return await access_data(start, end, step, window_size);
 };
 
 

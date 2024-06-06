@@ -22,8 +22,8 @@ const MODE_PRELOAD_AND_CACHE = 12000003;
 
 const data_loading_mode = MODE_PRELOAD_AND_CACHE;
 const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
-const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
-const preload_and_cache_base_url = 'http://10.0.0.134:9012/preload_data';
+const load_at_update_base_url = 'http://10.0.0.193:9012/window_data';
+const preload_and_cache_base_url = 'http://10.0.0.193:9012/preload_data';
 
 var cache_worker = null;
 var main_to_worker_signal = null;
@@ -71,6 +71,9 @@ window.addEventListener('wheel', (event) => {
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
     // console.log(getMousePosition());
+    if (data_loading_mode !== MODE_PRELOAD_AND_CACHE) {
+        return;
+    }
     var mouse_x_value = getMousePosition();
     var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
     // console.log(mouse_left_ratio);
@@ -101,6 +104,9 @@ chart_element.addEventListener('wheel', function (event) {
         return;
     }
     mouseX = event.clientX;
+    if (data_loading_mode !== MODE_PRELOAD_AND_CACHE) {
+        return;
+    }
     var mouse_x_value = getMousePosition();
     var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
     // console.log(mouse_left_ratio);

@@ -473,7 +473,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
         request.timeout = 50;
-        var callbacks = create_request_callbacks(request, start, end, level, step);
+        var callbacks = create_request_callbacks(request, shared_start, shared_end, level, step);
         request.onload = callbacks[0];
         request.onerror = callbacks[1];
         request.ontimeout = callbacks[1];
@@ -624,7 +624,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         request.responseType = 'arraybuffer';
         request.timeout = 50;
         var onerror = () => {
-            console.log('onerror');
+            // console.log('onerror');
             var request = new XMLHttpRequest();
             request.open('GET', url, true);
             request.responseType = 'arraybuffer';

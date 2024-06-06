@@ -423,11 +423,11 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         if(level !== current_request_level || has_request === false){
             return;
         }
-        var current_start = Math.floor(start / step) + 1;
+        var current_start = Math.floor(current_request_start / step) + 1;
         if(level === 0){
-            current_start = start;
+            current_start = current_request_start;
         }
-        var length = Math.floor((end - 1 - start) / step) + 1;
+        var length = Math.floor((current_request_end - 1 - current_request_start) / step) + 1;
         var current_end = current_start + length;
         if(current_start<cache_start || current_end>cache_end){
             return;
@@ -513,7 +513,7 @@ var access_data_tmp = async (start, end, step, window_size, window_max) => {
     var level = Math.round(Math.log2(step));
     // current_request_level = level;
     // has_request = true;
-    console.log('resolved bt previous cache requests');
+    console.log('resolved by previous cache requests');
     var length = Math.floor((end - 1 - start) / step) + 1;
     var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
     if (level == 0) {
@@ -522,21 +522,15 @@ var access_data_tmp = async (start, end, step, window_size, window_max) => {
     // 1. 检查 whole_level_caches 是否能满足需求
     if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
         var this_level = whole_level_caches[level];
-        // var length = Math.floor((end - 1 - start) / step)+1;
         var response_bytes = shared_bytes;
-        var cache_bytes = new Uint8Array(this_level);
-        var cache_length = cache_bytes.length;
+        var cache_length = this_level.length;
         var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        // var cache_start = Math.floor(start / step)+1;
-        // if (level == 0) {
-        //     cache_start = start;
-        // }
         var cache_end = cache_start + length; // actual end plus 1
         for (var i = 0; i < VARIABLE_NUM; i++) {
             var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
             var byte_length = length * 4;
             var response_start_byte = i * length * 4;
-            response_bytes.set(cache_bytes.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
+            response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
         has_request = false;
         return length * 4 * VARIABLE_NUM;
@@ -581,15 +575,9 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     // 1. 检查 whole_level_caches 是否能满足需求
     if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
         var this_level = whole_level_caches[level];
-        // var length = Math.floor((end - 1 - start) / step)+1;
         var response_bytes = shared_bytes;
-        // var cache_bytes = this_level;
         var cache_length = this_level.length;
         var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        // var cache_start = Math.floor(start / step)+1;
-        // if (level == 0) {
-        //     cache_start = start;
-        // }
         var cache_end = cache_start + length; // actual end plus 1
         for (var i = 0; i < VARIABLE_NUM; i++) {
             var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
@@ -687,7 +675,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         if(this_start >= cache_end || this_end <= cache_start){
             break;
         }
-        var new_data = transpose_4bytes(response_data, length);
+        var new_data = transpose_4bytes(new Uint8Array(response_data), length);
         var shared_start = Math.max(this_start, cache_start);
         var shared_end = Math.min(this_end, cache_end);
         var shared_length = shared_end - shared_start;

@@ -69,6 +69,8 @@ var has_request = false;
 var mouse_position = 0.5;
 var current_request_promise_resolve = null;
 
+var ongoing_requests = new Set();
+
 
 var do_whole_level_cache = async () => {
     var current = MAX_LEVEL;
@@ -619,38 +621,49 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     json_data = stringToHex(JSON.stringify(json_data));
     var url = BASE_URL + '/' + json_data;
     var response_data = await new Promise((resolve) => {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = 'arraybuffer';
-        request.timeout = 50;
-        var onerror = () => {
-            // console.log('onerror');
-            var request = new XMLHttpRequest();
-            request.open('GET', url, true);
-            request.responseType = 'arraybuffer';
-            request.timeout = 50;
-            request.onload = function () {
-                console.log('onload');
-                if (request.status === 200) {
-                    resolve(request.response);
-                } else {
-                    onerror();
-                }
-            };
-            request.onerror = onerror;
-            request.ontimeout = onerror;
-            request.send();
+        // var request = new XMLHttpRequest();
+        // request.open('GET', url, true);
+        // ongoing_requests.add(request_id);
+        // request.responseType = 'arraybuffer';
+        // // request.timeout = 50;
+        // // var onerror = () => {
+        // //     // console.log('onerror');
+        // //     var request = new XMLHttpRequest();
+        // //     request.open('GET', url, true);
+        // //     request.responseType = 'arraybuffer';
+        // //     request.timeout = 50;
+        // //     request.onload = function () {
+        // //         console.log('onload');
+        // //         if (request.status === 200) {
+        // //             resolve(request.response);
+        // //         } else {
+        // //             onerror();
+        // //         }
+        // //     };
+        // //     request.onerror = onerror;
+        // //     request.ontimeout = onerror;
+        // //     request.send();
+        // // }
+        // request.onload = function () {
+        //     if (request.status === 200) {
+        //         if(ongoing_requests.has(request_id) === false){
+        //             return;
+        //         }
+        //         ongoing_requests.delete(request_id);
+        //         resolve(request.response);
+        //     } else {
+        //         // onerror();
+        //     }
+        // };
+        // // request.onerror = onerror;
+        // // request.ontimeout = onerror;
+        // request.send();
+        var request_id = generate_request_id();
+        ongoing_requests.add(request_id);
+        for (var i=0;i<3;i++){
+            // 增加优先级
+            create_fixed_interval_request(url, request_id, resolve);
         }
-        request.onload = function () {
-            if (request.status === 200) {
-                resolve(request.response);
-            } else {
-                onerror();
-            }
-        };
-        request.onerror = onerror;
-        request.ontimeout = onerror;
-        request.send();
         current_request_promise_resolve = resolve;
     });
     // need to add here: resolved by cache request
@@ -690,6 +703,31 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     }
     return response_length;
     // return await access_data(start, end, step, window_size);
+};
+
+
+var create_fixed_interval_request = (url_, request_id_, resolve_)=> {
+    if(ongoing_requests.has(request_id_)===false){
+        return;
+    }
+    var url = url_;
+    var request_id = request_id_;
+    var resolve = resolve_;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.responseType = 'arraybuffer';
+    request.onload = function () {
+        if (request.status === 200) {
+            if(ongoing_requests.has(request_id) === false){
+                return;
+            }
+            ongoing_requests.delete(request_id);
+            resolve(request.response);
+        }
+    };
+    request.timeout = 30000; // just to prevent last too long
+    request.send();
+    setTimeout(create_fixed_interval_request, 50, url, request_id, resolve);
 };
 
 
@@ -822,4 +860,11 @@ var transpose_4bytes = (array, variable_num) => {
         }
     }
     return new_array;
-}
+};
+
+var generate_request_id = ()=>{
+    var a = Math.floor(Math.random()*1000000000);
+    var b = Math.floor(Math.random()*1000000000);
+    var c = Math.floor(Math.random()*1000000000);
+    return a.toString() + b.toString() + c.toString();
+};

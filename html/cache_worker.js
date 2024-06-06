@@ -491,7 +491,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
 }
 
 var update_cache = (mouse_move_only) => {
-    console.log('update_cache');
+    // console.log('update_cache');
     if (current_request_level === -1) {
         // 这代表是图都没加载好的时候鼠标在移动, 什么都不要做
         return;
@@ -513,6 +513,7 @@ var access_data_tmp = async (start, end, step, window_size, window_max) => {
     var level = Math.round(Math.log2(step));
     // current_request_level = level;
     // has_request = true;
+    console.log('resolved bt previous cache requests');
     var length = Math.floor((end - 1 - start) / step) + 1;
     var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
     if (level == 0) {
@@ -564,6 +565,7 @@ var access_data_tmp = async (start, end, step, window_size, window_max) => {
 };
 
 var access_data_2 = async (start, end, step, window_size, window_max) => {
+    var t1=performance.now();
     current_request_start = start;
     current_request_end = end;
     current_request_step = step;
@@ -581,8 +583,8 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         var this_level = whole_level_caches[level];
         // var length = Math.floor((end - 1 - start) / step)+1;
         var response_bytes = shared_bytes;
-        var cache_bytes = new Uint8Array(this_level);
-        var cache_length = cache_bytes.length;
+        // var cache_bytes = this_level;
+        var cache_length = this_level.length;
         var cache_point_num = cache_length / 4 / VARIABLE_NUM;
         // var cache_start = Math.floor(start / step)+1;
         // if (level == 0) {
@@ -593,9 +595,10 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
             var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
             var byte_length = length * 4;
             var response_start_byte = i * length * 4;
-            response_bytes.set(cache_bytes.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
+            response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
         has_request = false;
+        console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
     // 2. 检查 cached_data 是否能满足需求
@@ -616,8 +619,10 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         var result_bytes = cached_data[level].data.subarray((this_start - cache_start) * 4 * VARIABLE_NUM, (this_end - cache_start) * 4 * VARIABLE_NUM);
         shared_bytes.set(transpose_4bytes(result_bytes, VARIABLE_NUM));
         has_request = false;
+        console.log(`cache hit, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
+    console.log('cache miss');
     var json_data = {
         start: start,
         end: end,

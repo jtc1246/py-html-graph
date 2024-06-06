@@ -667,24 +667,24 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     has_request = false;
     current_request_promise_resolve = null;
     // put this response data into cache
-    while(cached_data[level] !== undefined){
-        var this_start = cache_start;
-        var this_end = cache_start + length;
-        cache_start = unnecessary_cache_area[level].start;
-        var cache_end = unnecessary_cache_area[level].end;
-        if(this_start >= cache_end || this_end <= cache_start){
-            break;
-        }
-        var new_data = transpose_4bytes(new Uint8Array(response_data), length);
-        var shared_start = Math.max(this_start, cache_start);
-        var shared_end = Math.min(this_end, cache_end);
-        var shared_length = shared_end - shared_start;
-        var shared_start_in_request = shared_start - this_start;
-        var shared_start_in_cache = shared_start - cache_start;
-        cached_data[level].data.set(new_data.subarray(shared_start_in_request * 4 * VARIABLE_NUM, (shared_start_in_request + shared_length) * 4 * VARIABLE_NUM), shared_start_in_cache * 4 * VARIABLE_NUM);
-        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
-        break;
-    }
+    // while(cached_data[level] !== undefined){
+    //     var this_start = cache_start;
+    //     var this_end = cache_start + length;
+    //     cache_start = unnecessary_cache_area[level].start;
+    //     var cache_end = unnecessary_cache_area[level].end;
+    //     if(this_start >= cache_end || this_end <= cache_start){
+    //         break;
+    //     }
+    //     var new_data = transpose_4bytes(new Uint8Array(response_data), length);
+    //     var shared_start = Math.max(this_start, cache_start);
+    //     var shared_end = Math.min(this_end, cache_end);
+    //     var shared_length = shared_end - shared_start;
+    //     var shared_start_in_request = shared_start - this_start;
+    //     var shared_start_in_cache = shared_start - cache_start;
+    //     cached_data[level].data.set(new_data.subarray(shared_start_in_request * 4 * VARIABLE_NUM, (shared_start_in_request + shared_length) * 4 * VARIABLE_NUM), shared_start_in_cache * 4 * VARIABLE_NUM);
+    //     cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
+    //     break;
+    // }
     return response_length;
     // return await access_data(start, end, step, window_size);
 };

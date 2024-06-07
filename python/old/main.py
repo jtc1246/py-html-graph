@@ -96,6 +96,7 @@ with open('../../data/10_50m.bin', 'rb') as f:
     data_10_50m = f.read()
 
 array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
+del data_10_50m
 print(array_10_50m[:, 0])
 array_min = np.min(array_10_50m)
 array_max = np.max(array_10_50m)

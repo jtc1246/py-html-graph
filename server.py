@@ -3,12 +3,14 @@ from typing import Any
 from _thread import start_new_thread
 from time import sleep
 
-from myBasics import strToBase64
+from myBasics import strToBase64, base64ToStr
 import sys
 import os
 from mySecrets import hexToStr
 from threading import Lock
 import ssl
+
+header = 'data:application/javascript;base64,'
 
 if(len(sys.argv)>=2 and sys.argv[1] == 'make'):
     with open('./html/main.html', 'r') as f:
@@ -102,14 +104,19 @@ class Request(BaseHTTPRequestHandler):
             axisjs = f.read()
         with open('./html/cache_worker.js', 'r') as f:
             worker = f.read()
+        with open('./html/http.js', 'r') as f:
+            httpjs = f.read()
+        httpjs = strToBase64(httpjs)
+        worker = worker.replace("'$httpjs$'", f"'{httpjs}'")
         worker = strToBase64(worker)
+        js = js.replace("'$cacheworkerbase64$'", f"'{worker}'")
         html = html.replace('<script src="chart.js"></script>', f'<script>{chartjs}</script>')
-        html = html.replace('<script src="main.js"></script>', f'<script>{js}</script>')
+        html = html.replace('<script src="main.js"></script>', f'<script src="{header+strToBase64(js)}"></script>')
         html = html.replace('<link rel="stylesheet" href="reset.css">', f'<style>{reset}</style>')
         html = html.replace('<link rel="stylesheet" href="main.css">', f'<style>{css}</style>')
-        html = html.replace('<script src="style.js"></script>', f'<script>{stylejs}</script>')
-        html = html.replace('<script src="axis.js"></script>', f'<script>{axisjs}</script>')
-        html = html.replace("'$cacheworkerbase64$'", f"'{worker}'")
+        html = html.replace('<script src="style.js"></script>', f'<script src="{header+strToBase64(stylejs)}"></script>')
+        html = html.replace('<script src="axis.js"></script>', f'<script src="{header+strToBase64(axisjs)}"></script>')
+        # html = html.replace("'$cacheworkerbase64$'", f"'{worker}'")
         html = html.encode('utf-8')
         self.send_header('Content-Length', len(html))
         self.end_headers()

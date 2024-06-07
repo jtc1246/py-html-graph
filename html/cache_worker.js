@@ -1,3 +1,4 @@
+self.importScripts('data:application/javascript;base64,' + '$httpjs$');
 /* 通信协议: 
    1. main_to_worker_signal 用于 主线程向 worker 发送信号, worker_to_main_signal 用于 worker 向主
       线程发送信号, signal 非 0 即代表有信号, 每次接收到信号之后, 要把 对方的 signal 设置成 0
@@ -56,7 +57,7 @@ var BASE_URL; // 获取数据的链接
 var TOTAL_DATA_POINTS;
 var VARIABLE_NUM;
 
-const MAX_CACHE_ALL_SIZE = 200 * 1000 * 1000; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
+const MAX_CACHE_ALL_SIZE = 0; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
 var MAX_LEVEL = -1;
 var MAX_CACHE_ALL_LEVEL = -1;
 
@@ -382,13 +383,10 @@ var create_requests = () => {
             var request = new XMLHttpRequest();
             request.open('GET', url, true);
             request.responseType = 'arraybuffer';
-            // request.timeout = 50;
             var request_id = generate_request_id();
             ongoing_requests.add(request_id);
             var callback = create_request_callbacks(request, start_index, end_index, this_level, step, request_id);
             request.onload = callback;
-            // request.onerror = callbacks[1];
-            // request.ontimeout = callbacks[1];
             request.send();
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
@@ -483,11 +481,8 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
         request.responseType = 'arraybuffer';
-        // request.timeout = 50;
         var callback = create_request_callbacks(request, shared_start, shared_end, level, step, request_id);
         request.onload = callback;
-        // request.onerror = callbacks[1];
-        // request.ontimeout = callbacks[1];
         request.send();
         // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
         // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
@@ -498,7 +493,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
             }
         }
     }
-    setTimeout(fixed_interval_request, 50);
+    setTimeout(fixed_interval_request, 75);
     return on_load;
 }
 

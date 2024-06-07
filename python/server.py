@@ -13,7 +13,7 @@ from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
 from typing import Literal
 from colors import generate_colors
-from htmls import html_404
+from htmls import html_404, dashboard_html
 
 
 def escape_html(s: str) -> str:
@@ -93,8 +93,8 @@ class GraphServer:
                 if (path_segments[-1] == ''):
                     path_segments = path_segments[:-1]
                 if(len(path_segments) == 0 or (path_segments[0] in ('index.html', 'dashboard.html', 'dashboard') and len(path_segments) == 1)):
-                    # Dashboard
-                    pass
+                    print('dashboard')
+                    self.process_dashboard()
                     return
                 graph_name = path_segments[0]
                 if(graph_name not in this.configs):
@@ -119,6 +119,30 @@ class GraphServer:
                 print(404)
                 # print(self.path)
                 self.process_404()
+                return
+            
+            def process_dashboard(self):
+                format = '<p>$jtc.phg.dash-id$. <a href="/$jtc.phg.dash-name$">$jtc.phg.dash-name$</a>: $jtc.phg.dash-desc$</p>\n'
+                content = ''
+                if(len(this.configs) == 0):
+                    content = '<p style="color:red;">No graphs added now.</p>'
+                cnt = 1
+                for name in this.configs:
+                    title = this.configs[name]['title']
+                    content += format.replace('$jtc.phg.dash-id$', str(cnt)) \
+                                     .replace('$jtc.phg.dash-name$', name) \
+                                     .replace('$jtc.phg.dash-desc$', title)
+                    cnt += 1
+                html = dashboard_html.replace('<p>0. <a href="/example" class="$jtc.py-html-graph.dashboard-items-replacer$">example</a>: this is an example</p>', content)
+                html = html.encode('utf-8')
+                self.send_response(200)
+                self.send_cache_header()
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Connection', 'keep-alive')
+                self.send_cors_header()
+                self.send_header('Content-Length', len(html))
+                self.end_headers()
+                self.wfile.write(html)
                 return
 
             def process_html(self, name):

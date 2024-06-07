@@ -11,6 +11,8 @@ import ssl
 from mySecrets import hexToStr, toHex
 from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
+from typing import Literal
+from colors import generate_colors
 
 
 def escape_html(s: str) -> str:
@@ -77,113 +79,93 @@ def generate_html(base_path: str,
     return html
 
 
-def create_request_class(name_: str, array_: np.ndarray, direction: str = 'row') -> type:
-    name = name_
-    array = array_
-    array_min = np.min(array)
-    array_max = np.max(array)
-    if (direction == 'row'):
-        variable_num = array.shape[1]
-        data_point_num = array.shape[0]
-        array = array.T  # 虽然这是正统, 但是目前的代码是按 column 写的
-    else:
-        variable_num = array.shape[0]
-        data_point_num = array.shape[1]
+class GraphServer:
+    def __init__(this, port: int, mode: Literal['http', 'https'] = 'http'):
+# def create_request_class(name_: str, array_: np.ndarray, direction: str = 'row') -> type:
+        this.configs = {}
+        this.port = port
+        this.mode = mode
 
-    class Request(BaseHTTPRequestHandler):
-        def do_GET(self):
-            path_segments = self.path.split('/')[1:]
-            if (path_segments[-1] == ''):
-                path_segments = path_segments[:-1]
-            if (len(path_segments) == 1 and path_segments[0] == name):
-                print('html')
-                self.process_html()
+        class Request(BaseHTTPRequestHandler):
+            def do_GET(self):
+                path_segments = self.path.split('/')[1:]
+                if (path_segments[-1] == ''):
+                    path_segments = path_segments[:-1]
+                if(len(path_segments) == 0 or (path_segments[0] in ('index.html', 'dashboard.html', 'dashboard') and len(path_segments) == 1)):
+                    # Dashboard
+                    pass
+                    return
+                graph_name = path_segments[0]
+                if(graph_name not in this.configs):
+                    self.process_404()
+                    return
+                if (len(path_segments) == 1):
+                    print('html')
+                    self.process_html(graph_name)
+                    return
+                if (len(path_segments) == 2 and path_segments[1] == 'minmax'):
+                    print('minmax')
+                    self.process_minmax(graph_name)
+                    return
+                if (len(path_segments) == 2):
+                    self.process_one_request(path_segments[1], graph_name)
+                    return
+                if (len(path_segments) == 3 and path_segments[1] == 'batch'):
+                    print('batch request')
+                    self.process_batch(path_segments[2], graph_name)
+                    return
+                print(404)
+                print(self.path)
+                self.process_404()
                 return
-            if (len(path_segments) == 2 and path_segments[0] == name and path_segments[1] == 'minmax'):
-                print('minmax')
-                self.process_minmax()
-                return
-            if (len(path_segments) == 2 and path_segments[0] == name):
-                self.process_one_request(path_segments[1])
-                return
-            if (len(path_segments) == 3 and path_segments[0] == name and path_segments[1] == 'batch'):
-                print('batch request')
-                self.process_batch(path_segments[2])
-                return
-            print(404)
-            print(self.path)
-            self.process_404()
-            return
 
-        def process_html(self):
-            self.send_response(200)
-            self.send_cache_header()
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self.send_header('Connection', 'keep-alive')
-            self.send_cors_header()
-            domain = self.headers['Host']
-            data_server_url = f'/{name}'
-            html = generate_html('../html',
-                                 data_point_num=data_point_num,
-                                 variable_num=variable_num,
-                                 variable_names=['Name ' + str(i) for i in range(1, variable_num + 1)],
-                                 label_colors=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'][0:variable_num],
-                                 data_server_url=data_server_url)
-            html = html.encode('utf-8')
-            self.send_header('Content-Length', len(html))
-            self.end_headers()
-            self.wfile.write(html)
+            def process_html(self, name):
+                self.send_response(200)
+                self.send_cache_header()
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Connection', 'keep-alive')
+                self.send_cors_header()
+                domain = self.headers['Host']
+                data_server_url = f'/{name}'
+                html = generate_html('../html',
+                                    data_point_num=this.configs[name]['data_point_num'],
+                                    variable_num=this.configs[name]['variable_num'],
+                                    variable_names=this.configs[name]['names'],
+                                    label_colors=this.configs[name]['colors'],
+                                    data_server_url=data_server_url,
+                                    graph_title=this.configs[name]['title'],
+                                    x_title=this.configs[name]['x_title'],
+                                    y_title=this.configs[name]['y_title'],
+                                    x_start_ms=this.configs[name]['x_start_ms'],
+                                    x_step_ms=this.configs[name]['x_step_ms'],
+                                    max_whole_level_cache_size=this.configs[name]['max_whole_level_cache_size'])
+                html = html.encode('utf-8')
+                self.send_header('Content-Length', len(html))
+                self.end_headers()
+                self.wfile.write(html)
 
-        def process_minmax(self):
-            a = array_min.byteswap().tobytes()
-            b = array_max.byteswap().tobytes()
-            data = binToBase64(a + b)
-            self.send_response(200)
-            self.send_header('Content-Length', len(data))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data.encode('utf-8'))
-            return
+            def process_minmax(self, name):
+                a = this.configs[name]['array_min'].byteswap().tobytes()
+                b = this.configs[name]['array_max'].byteswap().tobytes()
+                data = binToBase64(a + b)
+                self.send_response(200)
+                self.send_header('Content-Length', len(data))
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(data.encode('utf-8'))
+                return
 
-        def process_one_request(self, data: str):
-            json_data = json.loads(hexToStr(data))
-            print('single-request: ', end='')
-            print(json_data)
-            start = json_data['start']
-            end = json_data['end']
-            step = json_data['step']
-            transpose = 'tr' in json_data
-            selected = []
-            for i in range(start, end, step):
-                selected.append(i)
-            if (selected[0] < 0):
-                selected[0] = 0
-            if (selected[-1] > data_point_num - 1):
-                selected[-1] = data_point_num - 1
-            array_ = array[:, selected]
-            if (transpose):
-                array_ = array_.T
-            data = array_.byteswap().tobytes()
-            # data = binToBase64(data)
-            self.send_response(200)
-            self.send_header('Content-Length', len(data))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data)
-            return
-        
-        def process_batch(self, data: str):
-            json_data = json.loads(hexToStr(data))
-            results = []
-            lengths = []
-            total_length = 0
-            for a in json_data:
-                current_request = json.loads(hexToStr(a))
-                start = current_request['start']
-                end = current_request['end']
-                step = current_request['step']
+            def process_one_request(self, data: str, name):
+                array = this.configs[name]['array']
+                data_point_num = this.configs[name]['data_point_num']
+                json_data = json.loads(hexToStr(data))
+                print('single-request: ', end='')
+                print(json_data)
+                start = json_data['start']
+                end = json_data['end']
+                step = json_data['step']
+                transpose = 'tr' in json_data
                 selected = []
                 for i in range(start, end, step):
                     selected.append(i)
@@ -192,61 +174,125 @@ def create_request_class(name_: str, array_: np.ndarray, direction: str = 'row')
                 if (selected[-1] > data_point_num - 1):
                     selected[-1] = data_point_num - 1
                 array_ = array[:, selected]
-                data = array_.T.byteswap().tobytes()
-                results.append(data)
-                lengths.append(len(data))
-                total_length += len(data)
-            data = b''.join(results)
-            length_header = toHex(json.dumps(lengths))
-            self.send_response(200)
-            self.send_header('Content-Length', total_length)
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Parts-Length', length_header)
-            self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
-            self.end_headers()
-            self.wfile.write(data)
-            return
+                if (transpose):
+                    array_ = array_.T
+                data = array_.byteswap().tobytes()
+                # data = binToBase64(data)
+                self.send_response(200)
+                self.send_header('Content-Length', len(data))
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            
+            def process_batch(self, data: str, name):
+                array = this.configs[name]['array']
+                data_point_num = this.configs[name]['data_point_num']
+                json_data = json.loads(hexToStr(data))
+                results = []
+                lengths = []
+                total_length = 0
+                for a in json_data:
+                    current_request = json.loads(hexToStr(a))
+                    start = current_request['start']
+                    end = current_request['end']
+                    step = current_request['step']
+                    selected = []
+                    for i in range(start, end, step):
+                        selected.append(i)
+                    if (selected[0] < 0):
+                        selected[0] = 0
+                    if (selected[-1] > data_point_num - 1):
+                        selected[-1] = data_point_num - 1
+                    array_ = array[:, selected]
+                    data = array_.T.byteswap().tobytes()
+                    results.append(data)
+                    lengths.append(len(data))
+                    total_length += len(data)
+                data = b''.join(results)
+                length_header = toHex(json.dumps(lengths))
+                self.send_response(200)
+                self.send_header('Content-Length', total_length)
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Parts-Length', length_header)
+                self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
+                self.end_headers()
+                self.wfile.write(data)
+                return
 
-        def send_cache_header(self):
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
+            def send_cache_header(self):
+                self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                self.send_header('Pragma', 'no-cache')
+                self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
 
-        def send_cors_header(self):
-            self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
-            self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
-            self.send_header('Access-Control-Allow-Origin', '*')
+            def send_cors_header(self):
+                self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+                self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
+                self.send_header('Access-Control-Allow-Origin', '*')
 
-        def process_404(self):
-            self.send_response(404)
-            self.send_cache_header()
-            self.send_header('Content-Length', 13)
-            self.send_header('Connection', 'keep-alive')
-            self.send_cors_header()
-            self.end_headers()
-            self.wfile.write(b'404 Not Found')
-            return
+            def process_404(self):
+                self.send_response(404)
+                self.send_cache_header()
+                self.send_header('Content-Length', 13)
+                self.send_header('Connection', 'keep-alive')
+                self.send_cors_header()
+                self.end_headers()
+                self.wfile.write(b'404 Not Found')
+                return
 
-        def do_POST(self):
-            print('POST 404')
-            self.process_404()
-            return
+            def do_POST(self):
+                print('POST 404')
+                self.process_404()
+                return
 
-        def log_message(self, *args) -> None:
-            pass
+            def log_message(self, *args) -> None:
+                pass
+            
+        this.RequestClass = Request
+    
+    def add_graph(this, name: str, array: np.ndarray, direction: str = 'row'):
+        config = {}
+        config['array_min'] = np.min(array)
+        config['array_max'] = np.max(array)
+        if(direction == 'row'):
+            config['variable_num'] = array.shape[1]
+            config['data_point_num'] = array.shape[0]
+            config['array'] = array.T
+        else:
+            config['variable_num'] = array.shape[0]
+            config['data_point_num'] = array.shape[1]
+            config['array'] = array
+        config['names'] = [f'Name {i}' for i in range(1, config['variable_num'] + 1)]
+        config['colors'] = generate_colors(config['variable_num'], 10)
+        config['title'] = 'The title of graph'
+        config['x_title'] = 'The description of X'
+        config['y_title'] = 'The description of Y'
+        config['x_start_ms'] = 0
+        config['x_step_ms'] = 1000
+        config['max_whole_level_cache_size'] = 0
+        this.configs[name] = config
+    
+    
+    def start(this):
+        this.server = ThreadingHTTPServer(('0.0.0.0', this.port), this.RequestClass)
+        start_new_thread(this.server.serve_forever, ())
+        print(f"Server started, link (if on same device): http://127.0.0.1:{this.port}")
+    
+    def wait_forever(this):
+        while True:
+            sleep(10)
 
-    return Request
+if __name__ == '__main__':
+    with open('../data/10_50m.bin', 'rb') as f:
+        data_10_50m = f.read()
+    array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
+    del data_10_50m
 
-with open('../data/10_50m.bin', 'rb') as f:
-    data_10_50m = f.read()
-array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
-del data_10_50m
-
-RequestClass = create_request_class('jtc', array_10_50m, 'column')
-
-server = ThreadingHTTPServer(('0.0.0.0', 9010), RequestClass)
-start_new_thread(server.serve_forever, ())
-print(f'Listening at 0.0.0.0:9010, http://127.0.0.1:9010')
-while True:
-    sleep(10)
+    server = GraphServer(9010)
+    server.add_graph('jtc', array_10_50m, 'column')
+    server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
+    server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
+    server.start()
+    server.wait_forever()

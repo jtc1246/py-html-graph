@@ -13,6 +13,7 @@ from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
 from typing import Literal
 from colors import generate_colors
+from htmls import html_404
 
 
 def escape_html(s: str) -> str:
@@ -97,6 +98,7 @@ class GraphServer:
                     return
                 graph_name = path_segments[0]
                 if(graph_name not in this.configs):
+                    print(404)
                     self.process_404()
                     return
                 if (len(path_segments) == 1):
@@ -115,7 +117,7 @@ class GraphServer:
                     self.process_batch(path_segments[2], graph_name)
                     return
                 print(404)
-                print(self.path)
+                # print(self.path)
                 self.process_404()
                 return
 
@@ -235,11 +237,11 @@ class GraphServer:
             def process_404(self):
                 self.send_response(404)
                 self.send_cache_header()
-                self.send_header('Content-Length', 13)
+                self.send_header('Content-Length', len(html_404.encode('utf-8')))
                 self.send_header('Connection', 'keep-alive')
                 self.send_cors_header()
                 self.end_headers()
-                self.wfile.write(b'404 Not Found')
+                self.wfile.write(html_404.encode('utf-8'))
                 return
 
             def do_POST(self):
@@ -277,8 +279,13 @@ class GraphServer:
     
     def start(this):
         this.server = ThreadingHTTPServer(('0.0.0.0', this.port), this.RequestClass)
+        if(this.mode == 'https'):
+            this.server.socket = ssl.wrap_socket(this.server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
         start_new_thread(this.server.serve_forever, ())
-        print(f"Server started, link (if on same device): http://127.0.0.1:{this.port}")
+        if(this.mode == 'http'):
+            print(f"Server started, link: http://127.0.0.1:{this.port}")
+        else:
+            print(f"Server started, using https, listening on port {this.port}. Link: https://<ip>:{this.port}")
     
     def wait_forever(this):
         while True:
@@ -290,7 +297,7 @@ if __name__ == '__main__':
     array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
     del data_10_50m
 
-    server = GraphServer(9010)
+    server = GraphServer(9010, 'http')
     server.add_graph('jtc', array_10_50m, 'column')
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')

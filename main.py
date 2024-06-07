@@ -3,7 +3,7 @@ import random
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from _thread import start_new_thread
 from time import sleep
-from mySecrets import hexToStr
+from mySecrets import hexToStr, toHex
 import json
 from math import floor
 from myBasics import binToBase64
@@ -196,13 +196,44 @@ class Request(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data.encode('utf-8'))
                 return
+            if(path[14:].startswith('batch/')):
+                print('batch request')
+                json_data = json.loads(hexToStr(path[20:]))
+                results = []
+                lengths = []
+                total_length = 0
+                for a in json_data:
+                    current_request = json.loads(hexToStr(a))
+                    start = current_request['start']
+                    end = current_request['end']
+                    step = current_request['step']
+                    selected = []
+                    for i in range(start, end, step):
+                        selected.append(i)
+                    if (selected[0] < 0):
+                        selected[0] = 0
+                    if (selected[-1] > array_10_50m.shape[1] - 1):
+                        selected[-1] = array_10_50m.shape[1] - 1
+                    array = array_10_50m[:, selected]
+                    data = array.T.tobytes()
+                    results.append(data)
+                    lengths.append(len(data))
+                    total_length += len(data)
+                data = b''.join(results)
+                length_header = toHex(json.dumps(lengths))
+                self.send_response(200)
+                self.send_header('Content-Length', total_length)
+                self.send_header('Connection', 'keep-alive')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Parts-Length', length_header)
+                self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
+                self.end_headers()
+                self.wfile.write(data)
+                return
             data = path[14:]
             json_data = json.loads(hexToStr(data))
             print('preload: ', end='')
             print(json_data)
-            # if(random.randint(0,99)>90):
-            #     print('ignored')
-            #     sleep(100)
             start = json_data['start']
             end = json_data['end']
             step = json_data['step']

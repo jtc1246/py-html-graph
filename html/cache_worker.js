@@ -1,3 +1,4 @@
+self.importScripts('data:application/javascript;base64,' + '$httpjs$');
 /* 通信协议: 
    1. main_to_worker_signal 用于 主线程向 worker 发送信号, worker_to_main_signal 用于 worker 向主
       线程发送信号, signal 非 0 即代表有信号, 每次接收到信号之后, 要把 对方的 signal 设置成 0
@@ -56,7 +57,7 @@ var BASE_URL; // 获取数据的链接
 var TOTAL_DATA_POINTS;
 var VARIABLE_NUM;
 
-const MAX_CACHE_ALL_SIZE = 200 * 1000 * 1000; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
+const MAX_CACHE_ALL_SIZE = 0; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
 var MAX_LEVEL = -1;
 var MAX_CACHE_ALL_LEVEL = -1;
 
@@ -68,6 +69,8 @@ var current_window_max = -1;
 var has_request = false;
 var mouse_position = 0.5;
 var current_request_promise_resolve = null;
+
+var ongoing_requests = new Set();
 
 
 var do_whole_level_cache = async () => {
@@ -152,8 +155,8 @@ var cache_init = () => {
 
 var get_new_required_range = () => {
     var new_range = {};
-    var start = current_request_start - (current_request_end - current_request_start)
-    var end = current_request_end + (current_request_end - current_request_start);
+    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
+    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
     start = Math.round(start / Math.pow(2, current_request_level));
     end = Math.round(end / Math.pow(2, current_request_level));
     new_range[current_request_level] = {
@@ -165,8 +168,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
+        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -179,8 +182,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
+        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -221,8 +224,8 @@ var get_new_required_range = () => {
 
 var get_new_unnecessary_range = () => {
     var new_range = {};
-    var start = current_request_start - (current_request_end - current_request_start)
-    var end = current_request_end + (current_request_end - current_request_start);
+    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
+    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
     start = Math.round(start / Math.pow(2, current_request_level));
     end = Math.round(end / Math.pow(2, current_request_level));
     new_range[current_request_level] = {
@@ -233,8 +236,8 @@ var get_new_unnecessary_range = () => {
         if (i < 0) {
             break;
         }
-        var start = current_request_start - current_window_max * Math.pow(2, i);
-        var end = current_request_end + current_window_max * Math.pow(2, i);
+        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
+        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -246,8 +249,8 @@ var get_new_unnecessary_range = () => {
         if(i>MAX_LEVEL) {
             break;
         }
-        var start = current_request_start - current_window_max * Math.pow(2, i);
-        var end = current_request_end + current_window_max * Math.pow(2, i);
+        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
+        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -376,33 +379,38 @@ var create_requests = () => {
                 tr: 1 // transpose
             };
             json_data = stringToHex(JSON.stringify(json_data));
-            var url = BASE_URL + '/' + json_data;
-            var request = new XMLHttpRequest();
-            request.open('GET', url, true);
-            request.responseType = 'arraybuffer';
-            request.timeout = 50;
-            var callbacks = create_request_callbacks(request, start_index, end_index, this_level, step);
-            request.onload = callbacks[0];
-            request.onerror = callbacks[1];
-            request.ontimeout = callbacks[1];
-            request.send();
+            // var url = BASE_URL + '/' + json_data;
+            // var request = new XMLHttpRequest();
+            // request.open('GET', url, true);
+            // request.responseType = 'arraybuffer';
+            var request_id = generate_request_id();
+            ongoing_requests.add(request_id);
+            var callback = create_request_callbacks(null, start_index, end_index, this_level, step, request_id);
+            // request.onload = callback;
+            // request.send();
+            request_manager.add(json_data, callback, (end_index - start_index) * 4 * VARIABLE_NUM);
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
     }
+    request_manager.flush();
 };
 
-var create_request_callbacks = (request_, start_, end_, level_, step_) => {
+var create_request_callbacks = (request_, start_, end_, level_, step_, request_id_) => {
     var start = start_;
     var end = end_;
     var level = level_;
     var step = step_;
     var request = request_;
+    var request_id = request_id_;
 
-    function on_load() {
+    function on_load(request) {
         if(request.status !== 200){
-            on_error();
             return;
         }
+        if(ongoing_requests.has(request_id) === false){
+            return;
+        }
+        ongoing_requests.delete(request_id);
         if(unnecessary_cache_area[level] === undefined){
             return;
         }
@@ -441,7 +449,10 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
         has_request = false;
         current_request_promise_resolve = null;
     };
-    function on_error() {
+    function fixed_interval_request() {
+        if(ongoing_requests.has(request_id) === false){
+            return;
+        }
         if(required_cache_area[level] === undefined){
             return;
         }
@@ -468,16 +479,14 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
             tr: 1 // transpose
         };
         json_data = stringToHex(JSON.stringify(json_data));
-        var url = BASE_URL + '/' + json_data;
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = 'arraybuffer';
-        request.timeout = 50;
-        var callbacks = create_request_callbacks(request, shared_start, shared_end, level, step);
-        request.onload = callbacks[0];
-        request.onerror = callbacks[1];
-        request.ontimeout = callbacks[1];
-        request.send();
+        // var url = BASE_URL + '/' + json_data;
+        // var request = new XMLHttpRequest();
+        // request.open('GET', url, true);
+        // request.responseType = 'arraybuffer';
+        var callback = create_request_callbacks(null, shared_start, shared_end, level, step, request_id);
+        // request.onload = callback;
+        // request.send();
+        request_manager.add(json_data, callback, (shared_end - shared_start) * 4 * VARIABLE_NUM);``
         // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
         // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
         // into cache) may just put data itself
@@ -487,7 +496,8 @@ var create_request_callbacks = (request_, start_, end_, level_, step_) => {
             }
         }
     }
-    return [on_load, on_error];
+    setTimeout(fixed_interval_request, 50);
+    return on_load;
 }
 
 var update_cache = (mouse_move_only) => {
@@ -586,7 +596,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
             response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
         has_request = false;
-        console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
+        // console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
     // 2. 检查 cached_data 是否能满足需求
@@ -607,10 +617,10 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         var result_bytes = cached_data[level].data.subarray((this_start - cache_start) * 4 * VARIABLE_NUM, (this_end - cache_start) * 4 * VARIABLE_NUM);
         shared_bytes.set(transpose_4bytes(result_bytes, VARIABLE_NUM));
         has_request = false;
-        console.log(`cache hit, time: ${performance.now()-t1} ms`);
+        // console.log(`cache hit, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
-    console.log('cache miss');
+    // console.log('cache miss');
     var json_data = {
         start: start,
         end: end,
@@ -619,57 +629,32 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
     json_data = stringToHex(JSON.stringify(json_data));
     var url = BASE_URL + '/' + json_data;
     var response_data = await new Promise((resolve) => {
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = 'arraybuffer';
-        request.timeout = 50;
-        var onerror = () => {
-            // console.log('onerror');
-            var request = new XMLHttpRequest();
-            request.open('GET', url, true);
-            request.responseType = 'arraybuffer';
-            request.timeout = 50;
-            request.onload = function () {
-                console.log('onload');
-                if (request.status === 200) {
-                    resolve(request.response);
-                } else {
-                    onerror();
-                }
-            };
-            request.onerror = onerror;
-            request.ontimeout = onerror;
-            request.send();
+        var request_id = generate_request_id();
+        ongoing_requests.add(request_id);
+        for (var i=0;i<3;i++){
+            // 增加优先级
+            create_fixed_interval_request(url, request_id, resolve);
         }
-        request.onload = function () {
-            if (request.status === 200) {
-                resolve(request.response);
-            } else {
-                onerror();
-            }
-        };
-        request.onerror = onerror;
-        request.ontimeout = onerror;
-        request.send();
         current_request_promise_resolve = resolve;
     });
-    // need to add here: resolved by cache request
     if(response_data ===1 || response_data === 2){
         var return_value = access_data_tmp(start, end, step, window_size, window_max);
         has_request = false;
         current_request_promise_resolve = null;
+        console.log(`cache miss, took ${performance.now()-t1} ms`);
         return return_value;
     }
-    // TODO: when timeout, not stop the previous request, just start a new request, whoever
-    //       finished first can resolve, do later
     var response_length = response_data.byteLength;
     shared_bytes.set(new Uint8Array(response_data), 0);
     has_request = false;
     current_request_promise_resolve = null;
     // put this response data into cache
     while(cached_data[level] !== undefined){
-        var this_start = cache_start;
-        var this_end = cache_start + length;
+        var this_start = Math.floor(start / step) + 1; // cache_start 前面可能修改了, 不能用
+        if(level === 0){
+            this_start = start;
+        }
+        var this_end = this_start + length;
         cache_start = unnecessary_cache_area[level].start;
         var cache_end = unnecessary_cache_area[level].end;
         if(this_start >= cache_end || this_end <= cache_start){
@@ -685,8 +670,33 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
         break;
     }
+    console.log(`cache miss, took ${performance.now()-t1} ms`);
     return response_length;
-    // return await access_data(start, end, step, window_size);
+};
+
+
+var create_fixed_interval_request = (url_, request_id_, resolve_)=> {
+    if(ongoing_requests.has(request_id_)===false){
+        return;
+    }
+    var url = url_;
+    var request_id = request_id_;
+    var resolve = resolve_;
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.responseType = 'arraybuffer';
+    request.onload = function () {
+        if (request.status === 200) {
+            if(ongoing_requests.has(request_id) === false){
+                return;
+            }
+            ongoing_requests.delete(request_id);
+            resolve(request.response);
+        }
+    };
+    request.timeout = 30000; // just to prevent last too long
+    request.send();
+    setTimeout(create_fixed_interval_request, 50, url, request_id, resolve);
 };
 
 
@@ -819,4 +829,21 @@ var transpose_4bytes = (array, variable_num) => {
         }
     }
     return new_array;
+};
+
+var generate_request_id = ()=>{
+    var a = Math.floor(Math.random()*1000000000);
+    var b = Math.floor(Math.random()*1000000000);
+    var c = Math.floor(Math.random()*1000000000);
+    return a.toString() + b.toString() + c.toString();
+};
+
+function hexToString(hexStr) {
+    // Warning: ASCII only
+    var str = '';
+    for (var i = 0; i < hexStr.length; i += 2) {
+        var hex = hexStr.substring(i, i + 2);
+        str += String.fromCharCode(parseInt(hex, 16));
+    }
+    return str;
 }

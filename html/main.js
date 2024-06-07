@@ -31,6 +31,45 @@ if(preload_and_cache_base_url[0] === '/'){
     preload_and_cache_base_url = window.location.protocol + "//" + window.location.host + preload_and_cache_base_url;
 }
 
+var browser_info = navigator.userAgent.toLowerCase();
+if((browser_info.indexOf('safari/') !== -1 && browser_info.indexOf('chrome/') === -1) || browser_info.indexOf('firefox/') !== -1){
+    var main = document.getElementById('main');
+    main.innerHTML = "This page can't be opened in Safari or Firefox! Please use Chrome, Edge or Opera (Recommend chrome and opera)."
+    main.style.color = 'red';
+    main.style.overflow = 'visible';
+    main.style.fontSize = '2.5vw';
+    main.style.textAlign = 'center';
+    main.style.paddingTop = '10vw';
+    main.style.lineHeight = '1.2';
+    main.style.width = '80%';
+    main.style.marginLeft = '10%';
+    throw new Error();
+}
+
+if(window.location.protocol === 'http:' && !window.location.host.startsWith('127.0.0.1') && !window.location.host.startsWith('localhost')){
+    var main = document.getElementById('main');
+    main.innerHTML = "If using http, this page can only be opened on the same device (127.0.0.1 or localhost) as the server. Please use https or open it on the same device (through 127.0.0.1 or localhost)."
+    main.innerHTML += '<p id="p1">Why?</p><p id="p2">In this webpage, I need to use sharedArrayBuffer, which requires Cross-Origin-Opener-Policy header (or the browser will not recognize sharedArrayBuffer). But if you open through http and not from 127.0.0.1 or localhost, the browser will disallow the header of Cross-Origin-Opener-Policy, so this page can\'t be opened.</p>';
+    main.style.color = 'red';
+    main.style.overflow = 'visible';
+    main.style.fontSize = '2.5vw';
+    main.style.textAlign = 'center';
+    main.style.paddingTop = '5vw';
+    main.style.lineHeight = '1.2';
+    main.style.width = '80%';
+    main.style.marginLeft = '10%';
+    main.style.textAlign = 'left';
+    var p1 = document.getElementById('p1');
+    p1.style.fontSize = '1.5vw';
+    p1.style.paddingTop = '4vw';
+    p1.style.lineHeight = '1.2';
+    var p2 = document.getElementById('p2');
+    p2.style.fontSize = '1.5vw';
+    p2.style.lineHeight = '1.25';
+    p2.style.paddingTop = '1vw';
+    throw new Error();
+}
+
 var cache_worker = null;
 var main_to_worker_signal = null;
 var worker_to_main_signal = null;

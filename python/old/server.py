@@ -87,7 +87,7 @@ class Request(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Connection', 'keep-alive')
         self.send_cors_header()
-        html = generate_html('./html')
+        html = generate_html('../../html')
         self.send_header('Content-Length', len(html))
         self.end_headers()
         self.wfile.write(html)

@@ -86,13 +86,13 @@ def to_big_endian(arr: np.ndarray) -> bytes:
 # with open('data/10_50m.bin', 'wb') as f:
 #     f.write(data)
 
-with open('data/10_500k.bin', 'rb') as f:
-    data_10_500k = f.read()
+# with open('data/10_500k.bin', 'rb') as f:
+#     data_10_500k = f.read()
 
-with open('data/10_5m.bin', 'rb') as f:
-    data_10_5m = f.read()
+# with open('data/10_5m.bin', 'rb') as f:
+#     data_10_5m = f.read()
 
-with open('data/10_50m.bin', 'rb') as f:
+with open('../../data/10_50m.bin', 'rb') as f:
     data_10_50m = f.read()
 
 array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
@@ -104,159 +104,105 @@ array_10_50m = array_10_50m.byteswap()
 
 
 class Request(BaseHTTPRequestHandler):
+    def process_404(self):
+        print(404)
+        self.send_response(404)
+        self.send_header('Content-Length', 13)
+        self.send_header('Connection', 'keep-alive')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(b'404 Not Found')
+        return
+    
+    def process_minmax(self):
+        print('minmax')
+        a = array_min.byteswap().tobytes()
+        b = array_max.byteswap().tobytes()
+        data = binToBase64(a + b)
+        self.send_response(200)
+        self.send_header('Content-Length', len(data))
+        self.send_header('Connection', 'keep-alive')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(data.encode('utf-8'))
+        return
+    
+    def process_one_request(self):
+        data = self.path[14:]
+        json_data = json.loads(hexToStr(data))
+        print('single-request: ', end='')
+        print(json_data)
+        start = json_data['start']
+        end = json_data['end']
+        step = json_data['step']
+        transpose = 'tr' in json_data
+        selected = []
+        for i in range(start, end, step):
+            selected.append(i)
+        if (selected[0] < 0):
+            selected[0] = 0
+        if (selected[-1] > array_10_50m.shape[1] - 1):
+            selected[-1] = array_10_50m.shape[1] - 1
+        array = array_10_50m[:, selected]
+        if(transpose):
+            array = array.T
+        data = array.tobytes()
+        # data = binToBase64(data)
+        self.send_response(200)
+        self.send_header('Content-Length', len(data))
+        self.send_header('Connection', 'keep-alive')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(data)
+        return
+    
+    def process_batch(self):
+        print('batch request')
+        json_data = json.loads(hexToStr(self.path[20:]))
+        results = []
+        lengths = []
+        total_length = 0
+        for a in json_data:
+            current_request = json.loads(hexToStr(a))
+            start = current_request['start']
+            end = current_request['end']
+            step = current_request['step']
+            selected = []
+            for i in range(start, end, step):
+                selected.append(i)
+            if (selected[0] < 0):
+                selected[0] = 0
+            if (selected[-1] > array_10_50m.shape[1] - 1):
+                selected[-1] = array_10_50m.shape[1] - 1
+            array = array_10_50m[:, selected]
+            data = array.T.tobytes()
+            results.append(data)
+            lengths.append(len(data))
+            total_length += len(data)
+        data = b''.join(results)
+        length_header = toHex(json.dumps(lengths))
+        self.send_response(200)
+        self.send_header('Content-Length', total_length)
+        self.send_header('Connection', 'keep-alive')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Parts-Length', length_header)
+        self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
+        self.end_headers()
+        self.wfile.write(data)
+        return
+    
     def do_GET(self):
         path = self.path
-        if (path not in ('/data_10_500k', '/data_10_5m', '/data_10_50m')
-            and not path.startswith('/window_data/')
-                and not path.startswith('/preload_data/')):
-            print(404)
-            self.send_response(404)
-            self.send_header('Content-Length', 13)
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(b'404 Not Found')
+        if (not path.startswith('/preload_data/')):
+            self.process_404()
             return
-        if (path == '/data_10_500k'):
-            print('data_10_500k')
-            self.send_response(200)
-            self.send_header('Content-Length', len(data_10_500k))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data_10_500k)
+        if (path[14:] == 'minmax'):
+            self.process_minmax()
             return
-        if (path == '/data_10_5m'):
-            print('data_10_5m')
-            self.send_response(200)
-            self.send_header('Content-Length', len(data_10_5m))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data_10_5m)
+        if(path[14:].startswith('batch/')):
+            self.process_batch()
             return
-        if (path == '/data_10_50m'):
-            print('data_10_50m')
-            self.send_response(200)
-            self.send_header('Content-Length', len(data_10_50m))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data_10_50m)
-            return
-        # for load at update
-        if (path.startswith('/window_data/')):
-            if (path[13:] == 'minmax'):
-                print('at update: minmax')
-                a = array_min.byteswap().tobytes()
-                b = array_max.byteswap().tobytes()
-                data = binToBase64(a + b)
-                self.send_response(200)
-                self.send_header('Content-Length', len(data))
-                self.send_header('Connection', 'keep-alive')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(data.encode('utf-8'))
-                return
-            data = path[13:]
-            json_data = json.loads(hexToStr(data))
-            print('at update: ', end='')
-            print(json_data)
-            start = json_data['start']
-            end = json_data['end']
-            step = json_data['step']
-            selected = []
-            for i in range(start, end, step):
-                selected.append(i)
-            if (selected[0] < 0):
-                selected[0] = 0
-            if (selected[-1] > array_10_50m.shape[1] - 1):
-                selected[-1] = array_10_50m.shape[1] - 1
-            array = array_10_50m[:, selected]
-            data = array.tobytes()
-            data = binToBase64(data)
-            self.send_response(200)
-            self.send_header('Content-Length', len(data))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data.encode('utf-8'))
-            return
-        # for preload and cache
-        if (path.startswith('/preload_data/')):
-            if (path[14:] == 'minmax'):
-                print('preload: minmax')
-                a = array_min.byteswap().tobytes()
-                b = array_max.byteswap().tobytes()
-                data = binToBase64(a + b)
-                self.send_response(200)
-                self.send_header('Content-Length', len(data))
-                self.send_header('Connection', 'keep-alive')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(data.encode('utf-8'))
-                return
-            if(path[14:].startswith('batch/')):
-                print('batch request')
-                json_data = json.loads(hexToStr(path[20:]))
-                results = []
-                lengths = []
-                total_length = 0
-                for a in json_data:
-                    current_request = json.loads(hexToStr(a))
-                    start = current_request['start']
-                    end = current_request['end']
-                    step = current_request['step']
-                    selected = []
-                    for i in range(start, end, step):
-                        selected.append(i)
-                    if (selected[0] < 0):
-                        selected[0] = 0
-                    if (selected[-1] > array_10_50m.shape[1] - 1):
-                        selected[-1] = array_10_50m.shape[1] - 1
-                    array = array_10_50m[:, selected]
-                    data = array.T.tobytes()
-                    results.append(data)
-                    lengths.append(len(data))
-                    total_length += len(data)
-                data = b''.join(results)
-                length_header = toHex(json.dumps(lengths))
-                self.send_response(200)
-                self.send_header('Content-Length', total_length)
-                self.send_header('Connection', 'keep-alive')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Parts-Length', length_header)
-                self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
-                self.end_headers()
-                self.wfile.write(data)
-                return
-            data = path[14:]
-            json_data = json.loads(hexToStr(data))
-            print('preload: ', end='')
-            print(json_data)
-            start = json_data['start']
-            end = json_data['end']
-            step = json_data['step']
-            transpose = 'tr' in json_data
-            selected = []
-            for i in range(start, end, step):
-                selected.append(i)
-            if (selected[0] < 0):
-                selected[0] = 0
-            if (selected[-1] > array_10_50m.shape[1] - 1):
-                selected[-1] = array_10_50m.shape[1] - 1
-            array = array_10_50m[:, selected]
-            if(transpose):
-                array = array.T
-            data = array.tobytes()
-            # data = binToBase64(data)
-            self.send_response(200)
-            self.send_header('Content-Length', len(data))
-            self.send_header('Connection', 'keep-alive')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(data)
-            return
+        self.process_one_request()
 
     def log_message(self, *args) -> None:
         pass

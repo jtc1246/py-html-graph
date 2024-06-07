@@ -23,7 +23,7 @@ const MODE_PRELOAD_AND_CACHE = 12000003;
 const data_loading_mode = MODE_PRELOAD_AND_CACHE;
 const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
 const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
-const preload_and_cache_base_url = 'http://10.0.0.193:9012/preload_data';
+const preload_and_cache_base_url = 'http://127.0.0.1:9012/preload_data';
 
 var cache_worker = null;
 var main_to_worker_signal = null;

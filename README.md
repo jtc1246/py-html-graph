@@ -6,3 +6,5 @@
 4. 关于 await, 非常复杂. 在 fetch 前加 await 可以, 但是在 remote_print 前加 await 不行.
 
 **根本原因已经找到, safari在web worker里面进行网络请求会占用主线程, 只要主线程没有退出, 网络请求就不能发送**
+
+这个没有办法解决, 目前暂定不去支持safari

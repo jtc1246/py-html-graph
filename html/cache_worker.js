@@ -155,8 +155,8 @@ var cache_init = () => {
 
 var get_new_required_range = () => {
     var new_range = {};
-    var start = current_request_start - (current_request_end - current_request_start)
-    var end = current_request_end + (current_request_end - current_request_start);
+    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
+    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
     start = Math.round(start / Math.pow(2, current_request_level));
     end = Math.round(end / Math.pow(2, current_request_level));
     new_range[current_request_level] = {
@@ -168,8 +168,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
+        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -182,8 +182,8 @@ var get_new_required_range = () => {
             break;
         }
         var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (0.5+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (1.5-mouse_position) * current_window_max * Math.pow(2, i);
+        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
+        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -224,8 +224,8 @@ var get_new_required_range = () => {
 
 var get_new_unnecessary_range = () => {
     var new_range = {};
-    var start = current_request_start - (current_request_end - current_request_start)
-    var end = current_request_end + (current_request_end - current_request_start);
+    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
+    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
     start = Math.round(start / Math.pow(2, current_request_level));
     end = Math.round(end / Math.pow(2, current_request_level));
     new_range[current_request_level] = {
@@ -236,8 +236,8 @@ var get_new_unnecessary_range = () => {
         if (i < 0) {
             break;
         }
-        var start = current_request_start - current_window_max * Math.pow(2, i);
-        var end = current_request_end + current_window_max * Math.pow(2, i);
+        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
+        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -249,8 +249,8 @@ var get_new_unnecessary_range = () => {
         if(i>MAX_LEVEL) {
             break;
         }
-        var start = current_request_start - current_window_max * Math.pow(2, i);
-        var end = current_request_end + current_window_max * Math.pow(2, i);
+        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
+        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
         start = Math.round(start/Math.pow(2, i));
         end = Math.round(end/Math.pow(2, i));
         new_range[i] = {
@@ -392,6 +392,7 @@ var create_requests = () => {
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
     }
+    request_manager.flush();
 };
 
 var create_request_callbacks = (request_, start_, end_, level_, step_, request_id_) => {
@@ -595,7 +596,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
             response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
         }
         has_request = false;
-        console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
+        // console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
     // 2. 检查 cached_data 是否能满足需求
@@ -616,10 +617,10 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         var result_bytes = cached_data[level].data.subarray((this_start - cache_start) * 4 * VARIABLE_NUM, (this_end - cache_start) * 4 * VARIABLE_NUM);
         shared_bytes.set(transpose_4bytes(result_bytes, VARIABLE_NUM));
         has_request = false;
-        console.log(`cache hit, time: ${performance.now()-t1} ms`);
+        // console.log(`cache hit, time: ${performance.now()-t1} ms`);
         return length * 4 * VARIABLE_NUM;
     }
-    console.log('cache miss');
+    // console.log('cache miss');
     var json_data = {
         start: start,
         end: end,
@@ -640,6 +641,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         var return_value = access_data_tmp(start, end, step, window_size, window_max);
         has_request = false;
         current_request_promise_resolve = null;
+        console.log(`cache miss, took ${performance.now()-t1} ms`);
         return return_value;
     }
     var response_length = response_data.byteLength;
@@ -668,6 +670,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
         break;
     }
+    console.log(`cache miss, took ${performance.now()-t1} ms`);
     return response_length;
 };
 

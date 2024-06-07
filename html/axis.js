@@ -170,8 +170,8 @@ y_digits_input.addEventListener('input', () => {
 
 
 // ========================= Following is for X axis =========================
-const START_UNIX_MS = 1717186867000; // 2024-05-31 20:21:07 GMT+0
-const X_STEP_MS = 5000;
+const START_UNIX_MS = '$jtc.py-html-graph.x-start-ms$'; // user-configurable
+const X_STEP_MS = '$jtc.py-html-graph.x-step-ms$'; // user-configurable
 const LEVEL_S = [
     1, 2, 3, 5, 10, 15, 20, 30,
     60, 120, 180, 300, 600, 900, 1200, 1800,

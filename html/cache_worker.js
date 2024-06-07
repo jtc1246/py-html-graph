@@ -1,4 +1,4 @@
-self.importScripts('data:application/javascript;base64,' + '$httpjs$');
+self.importScripts('data:application/javascript;base64,' + '$jtc.py-html-graph.inside.httpjs$');
 /* 通信协议: 
    1. main_to_worker_signal 用于 主线程向 worker 发送信号, worker_to_main_signal 用于 worker 向主
       线程发送信号, signal 非 0 即代表有信号, 每次接收到信号之后, 要把 对方的 signal 设置成 0
@@ -57,7 +57,7 @@ var BASE_URL; // 获取数据的链接
 var TOTAL_DATA_POINTS;
 var VARIABLE_NUM;
 
-const MAX_CACHE_ALL_SIZE = 0; // 全部缓存的前几个 level, 最大的大小, 这是后期可设置的参数
+const MAX_CACHE_ALL_SIZE = '$jtc.py-html-graph.max-whole-level-cache-size$'; // user-configurable
 var MAX_LEVEL = -1;
 var MAX_CACHE_ALL_LEVEL = -1;
 

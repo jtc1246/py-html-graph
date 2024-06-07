@@ -106,6 +106,7 @@ array_10_50m = array_10_50m.byteswap()
 class Request(BaseHTTPRequestHandler):
     def process_404(self):
         print(404)
+        print(self.path)
         self.send_response(404)
         self.send_header('Content-Length', 13)
         self.send_header('Connection', 'keep-alive')

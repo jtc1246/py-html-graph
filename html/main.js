@@ -9,30 +9,32 @@ const ctx = document.getElementById('myChart').getContext('2d');
 var debug_element = document.getElementById('debug');
 var debug2_element = document.getElementById('debug2');
 
-const VARIABLE_NUM = 10;
-const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i + 1}`);
-VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = '<div>';
-VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
+const VARIABLE_NUM = '$jtc.py-html-graph.variable-num$'; // user-configurable
+// const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i + 1}`);
+// VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = '<div>';
+// VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
+const VARIABLE_NAMES = '$jtc.py-html-graph.variable-names$'; // user-configurable
 const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
-const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+// const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+const LABEL_COLORS = '$jtc.py-html-graph.label-colors$'; // user-configurable
 
 const MODE_LOAD_ONCE = 12000001;
 const MODE_LOAD_AT_UPDATE = 12000002;
 const MODE_PRELOAD_AND_CACHE = 12000003;
 
 const data_loading_mode = MODE_PRELOAD_AND_CACHE;
-const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
-const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
-const preload_and_cache_base_url = 'http://127.0.0.1:9012/preload_data';
+// const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
+// const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
+const preload_and_cache_base_url = '$jtc.py-html-graph.data-server-base-url$'; // user-configurable
 
 var cache_worker = null;
 var main_to_worker_signal = null;
 var worker_to_main_signal = null;
 var cache_worker_shared_bytes = null;
 
-const cache_worker_url = 'data:application/javascript;base64,' + '$cacheworkerbase64$';
+const cache_worker_url = 'data:application/javascript;base64,' + '$jtc.py-html-graph.inside.cacheworkerbase64$';
 
-const totalDataPoints = 50000000;
+const totalDataPoints = '$jtc.py-html-graph.data-point-num$'; // user-configurable
 const window_min = 5; // 这里不想做限制，让用户自由缩放，但是为了防止程序出现问题，设一个最小值
 var window_max = 1200; // 最多可以显示的点的数量，放大时减少数量，缩小时提高level，
 _ = 0                    // 除非在最小级（没有更详细的数据），实际的现实量不可以小于这个的一半,

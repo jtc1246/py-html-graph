@@ -379,15 +379,16 @@ var create_requests = () => {
                 tr: 1 // transpose
             };
             json_data = stringToHex(JSON.stringify(json_data));
-            var url = BASE_URL + '/' + json_data;
-            var request = new XMLHttpRequest();
-            request.open('GET', url, true);
-            request.responseType = 'arraybuffer';
+            // var url = BASE_URL + '/' + json_data;
+            // var request = new XMLHttpRequest();
+            // request.open('GET', url, true);
+            // request.responseType = 'arraybuffer';
             var request_id = generate_request_id();
             ongoing_requests.add(request_id);
-            var callback = create_request_callbacks(request, start_index, end_index, this_level, step, request_id);
-            request.onload = callback;
-            request.send();
+            var callback = create_request_callbacks(null, start_index, end_index, this_level, step, request_id);
+            // request.onload = callback;
+            // request.send();
+            request_manager.add(json_data, callback, (end_index - start_index) * 4 * VARIABLE_NUM);
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
     }
@@ -401,7 +402,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
     var request = request_;
     var request_id = request_id_;
 
-    function on_load() {
+    function on_load(request) {
         if(request.status !== 200){
             return;
         }
@@ -477,13 +478,14 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
             tr: 1 // transpose
         };
         json_data = stringToHex(JSON.stringify(json_data));
-        var url = BASE_URL + '/' + json_data;
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.responseType = 'arraybuffer';
-        var callback = create_request_callbacks(request, shared_start, shared_end, level, step, request_id);
-        request.onload = callback;
-        request.send();
+        // var url = BASE_URL + '/' + json_data;
+        // var request = new XMLHttpRequest();
+        // request.open('GET', url, true);
+        // request.responseType = 'arraybuffer';
+        var callback = create_request_callbacks(null, shared_start, shared_end, level, step, request_id);
+        // request.onload = callback;
+        // request.send();
+        request_manager.add(json_data, callback, (shared_end - shared_start) * 4 * VARIABLE_NUM);``
         // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
         // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
         // into cache) may just put data itself
@@ -493,7 +495,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
             }
         }
     }
-    setTimeout(fixed_interval_request, 75);
+    setTimeout(fixed_interval_request, 50);
     return on_load;
 }
 
@@ -832,3 +834,13 @@ var generate_request_id = ()=>{
     var c = Math.floor(Math.random()*1000000000);
     return a.toString() + b.toString() + c.toString();
 };
+
+function hexToString(hexStr) {
+    // Warning: ASCII only
+    var str = '';
+    for (var i = 0; i < hexStr.length; i += 2) {
+        var hex = hexStr.substring(i, i + 2);
+        str += String.fromCharCode(parseInt(hex, 16));
+    }
+    return str;
+}

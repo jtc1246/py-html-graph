@@ -56,7 +56,7 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             return
-        if (path not in ['/', '/index.html', '/cache_worker.js']):
+        if (path not in ['/', '/index.html']):
             print(404)
             self.send_response(404)
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -68,17 +68,6 @@ class Request(BaseHTTPRequestHandler):
             self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
             self.end_headers()
             self.wfile.write(b'404 Not Found')
-            return
-        if (path == '/cache_worker.js'):
-            print('cache_worker.js')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/javascript')
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
-            self.end_headers()
-            with open('./html/cache_worker.js', 'rb') as f:
-                self.wfile.write(f.read())
             return
         self.send_response(200)
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')

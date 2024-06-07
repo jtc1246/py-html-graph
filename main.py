@@ -197,6 +197,7 @@ class Request(BaseHTTPRequestHandler):
                 self.wfile.write(data.encode('utf-8'))
                 return
             if(path[14:].startswith('batch/')):
+                print('batch request')
                 json_data = json.loads(hexToStr(path[20:]))
                 results = []
                 lengths = []
@@ -225,6 +226,7 @@ class Request(BaseHTTPRequestHandler):
                 self.send_header('Connection', 'keep-alive')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Parts-Length', length_header)
+                self.send_header('Access-Control-Expose-Headers', 'Parts-Length')
                 self.end_headers()
                 self.wfile.write(data)
                 return

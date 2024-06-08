@@ -369,6 +369,30 @@
             document.getElementById("error").innerHTML = "Input is not valid.";
         }
     });
+
+    input.addEventListener('keypress', function(event) {
+        console.log('keypress');
+        if (event.keyCode === 13) {
+            go.click();
+        }
+    });
+
+    window.addEventListener('load', ()=> {
+        var addr = input.value;
+        if(addr.length === 0){
+            return;
+        }
+        addr = addr.split(' ').join('');
+        if (addr_valid(addr)) {
+            go.style.cursor = "pointer";
+            go.href = '/' + addr;
+            document.getElementById("error").innerHTML = "";
+        } else {
+            go.style.cursor = "not-allowed";
+            go.removeAttribute("href");
+            document.getElementById("error").innerHTML = "Input is not valid.";
+        }
+    });
 </script>
 
 </html>

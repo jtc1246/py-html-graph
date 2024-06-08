@@ -27,6 +27,16 @@ const data_loading_mode = MODE_PRELOAD_AND_CACHE;
 // const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
 var preload_and_cache_base_url = '$jtc.py-html-graph.data-server-base-url$'; // user-configurable
 
+// 直接在 base64 里面替换, 总共就3种情况
+var server_loc = '$$$jtc.py-html-graph.data-server-loc$$$'; // start with http, should not have / at the end
+
+server_loc = server_loc.split('$').join('');
+
+if(server_loc.startsWith('http')){
+    preload_and_cache_base_url = server_loc + preload_and_cache_base_url;
+}
+
+
 if(preload_and_cache_base_url[0] === '/'){
     preload_and_cache_base_url = window.location.protocol + "//" + window.location.host + preload_and_cache_base_url;
 }

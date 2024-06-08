@@ -3,3 +3,6 @@ with open('../html/404.html') as f:
 
 with open('../html/dash.html') as f:
     dashboard_html = f.read()
+
+with open('../html/forward.html') as f:
+    forwarder_html = f.read()

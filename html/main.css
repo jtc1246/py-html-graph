@@ -41,6 +41,22 @@
     height: 100%;
 }
 
+#dash {
+    grid-area: 1 / 1 / 2 / 2;
+    font-size: 0.8vw;
+    z-index: 99999;
+    text-decoration: underline;
+    color: rgb(208, 0, 255);
+}
+
+#dash:hover {
+    color: rgb(57, 190, 5);
+}
+
+#dash:active {
+    outline: solid 0.1vw blue;
+}
+
 
 /* 3. For the axis */
 #x {

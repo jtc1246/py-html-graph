@@ -122,7 +122,7 @@ class GraphServer:
                 return
             
             def process_dashboard(self):
-                format = '<p>$jtc.phg.dash-id$. <a href="/$jtc.phg.dash-name$">$jtc.phg.dash-name$</a>: $jtc.phg.dash-desc$</p>\n'
+                format = '<p>$jtc.phg.dash-id$. <a class="$jtc.phg.proxy-replacer$" href="/$jtc.phg.dash-name$">$jtc.phg.dash-name$</a>: $jtc.phg.dash-desc$</p>\n'
                 content = ''
                 if(len(this.configs) == 0):
                     content = '<p style="color:red;">No graphs added now.</p>'
@@ -130,8 +130,8 @@ class GraphServer:
                 for name in this.configs:
                     title = this.configs[name]['title']
                     content += format.replace('$jtc.phg.dash-id$', str(cnt)) \
-                                     .replace('$jtc.phg.dash-name$', name) \
-                                     .replace('$jtc.phg.dash-desc$', title)
+                                     .replace('$jtc.phg.dash-name$', escape_html(name)) \
+                                     .replace('$jtc.phg.dash-desc$', escape_html(title))
                     cnt += 1
                 html = dashboard_html.replace('<p>0. <a href="/example" class="$jtc.py-html-graph.dashboard-items-replacer$">example</a>: this is an example</p>', content)
                 html = html.encode('utf-8')
@@ -322,8 +322,8 @@ if __name__ == '__main__':
     del data_10_50m
 
     server = GraphServer(9010, 'http')
+    server.start()
     server.add_graph('jtc', array_10_50m, 'column')
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
-    server.start()
     server.wait_forever()

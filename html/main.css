@@ -43,10 +43,11 @@
 
 #dash {
     grid-area: 1 / 1 / 2 / 2;
-    font-size: 0.8vw;
+    font-size: 0.95vw;
     z-index: 99999;
     text-decoration: underline;
     color: rgb(208, 0, 255);
+    text-align: center;
 }
 
 #dash:hover {
@@ -276,6 +277,78 @@
 .label > p {
     font-size: 1vw;
     margin-left: 0.3vw;
+}
+
+#sel-uns-all {
+    /* background: yellow; */
+    justify-content: space-evenly;
+}
+
+#sel-uns-all button {
+    height: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20%;
+}
+
+#sel-button {
+    background-color: rgb(60, 255, 0);
+}
+
+#sel-button:hover {
+    background-color: rgb(100, 255, 0);
+}
+
+#sel-button:active {
+    background-color: rgb(120, 255, 0);
+}
+
+#uns-button {
+    background-color: #ff6363;
+}
+
+#uns-button:hover {
+    background-color: rgb(255, 123, 123);
+}
+
+#uns-button:active {
+    background-color: rgb(255, 140, 140);
+}
+
+#sel-uns-all img {
+    width: 85%;
+    height: 85%;
+}
+
+#sel-uns-all img:hover {
+    opacity: 0.8;
+}
+
+#sel-uns-all img:active {
+    opacity: 0.6;
+}
+
+/* .label {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none
+} */
+
+.label * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none
+}
+
+.label > p {
+    user-select: all !important;
+    -webkit-user-select: all !important;
+    -moz-user-select: all !important;
+    -ms-user-select: all !important;
 }
 
 

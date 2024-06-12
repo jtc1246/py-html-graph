@@ -229,10 +229,10 @@ var create_label_callback = (index) => {
             // not prefer to perform like this, just to prevent the bug when there is no variables
             // will remove later, because will add unselect all button
             const trueCount = VARIABLE_SHOW.filter(value => value).length;
-            if(trueCount === 1) {
-                element.checked = true;
-                return;
-            }
+            // if(trueCount === 1) {
+            //     element.checked = true;
+            //     return;
+            // }
             VARIABLE_SHOW[tmp] = false;
         }
         myChart.destroy();
@@ -241,19 +241,38 @@ var create_label_callback = (index) => {
     return callback;
 };
 
+var select_all_variables = () => {
+    for (var i = 0; i < VARIABLE_NUM; i++) {
+        VARIABLE_SHOW[i] = true;
+        document.getElementById(`label-checkbox-${i}`).checked = true;
+    }
+    myChart.destroy();
+    myChart = createChart_for_show_hide_variable();
+}
+
+var unselect_all_variables = () => {
+    for (var i = 0; i < VARIABLE_NUM; i++) {
+        VARIABLE_SHOW[i] = false;
+        document.getElementById(`label-checkbox-${i}`).checked = false;
+    }
+    myChart.destroy();
+    myChart = createChart_for_show_hide_variable();
+}
+
 var set_labels = () => {
     var label_container = document.getElementById('labels');
     var max_width = 0;
     var graph_height = chart_element.clientHeight;
     var window_width_2 = document.querySelector('main').clientWidth;
     var graph_height_vw = graph_height / window_width_2 * 100;
-    var per_label_height = graph_height_vw / VARIABLE_NUM;
+    var per_label_height = graph_height_vw / (VARIABLE_NUM+1);
     if (per_label_height > 2) {
         per_label_height = 2;
     }
     if (per_label_height < 1.34) {
         per_label_height = 1.34;
     }
+    document.getElementById('sel-uns-all').style.height = per_label_height + 'vw';
     for (var i = 0; i < VARIABLE_NUM; i++) {
         var this_label = document.createElement('div');
         this_label.classList.add('label');

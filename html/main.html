@@ -16,7 +16,7 @@
             <div id="force-overflow-hidden">
                 <canvas id="myChart"></canvas>
             </div>
-            <a id="dash" class="$jtc.phg.proxy-replacer$" href="/dashboard">Dashboard</a>
+            <a id="dash" class="$jtc.phg.proxy-replacer$" href="/dashboard">Dash<br>board</a>
             <h1 id="title">$jtc.py-html-graph.graph-title$</h1>
             <div id="y">
                 <div id="y-line"></div>
@@ -31,6 +31,12 @@
             </div>
             <div id="labels-wrapper">
                 <div id="labels">
+                    <div class="label" id="sel-uns-all">
+                        <!-- <button id="sel-all">Sel all</button>
+                        <button id="uns-all">Uns all</button> -->
+                        <button id="sel-button" onclick="select_all_variables()"><img id="sel-all"></button>
+                        <button id="uns-button" onclick="unselect_all_variables()""><img id="uns-all"></button>
+                    </div>
                 </div>
             </div>
             <div id="x">
@@ -106,8 +112,7 @@
         </div>
         <div id="debug-info">
             <p id="fps">FPS: 0</p><button id="reverse-mouse" onclick="reverse_mouse()">Reverse mouse
-                wheel</button><button id="copy-info" onclick="copy_info()">Copy info</button>
-            <div id="y-format" class="data-points">
+                wheel</button><button id="copy-info" onclick="copy_info()">Copy info</button><div id="y-format" class="data-points">
                 <p id="y-value-text" class="data-points-text">Data points in window (50 ~ 5000):</p>
                 <input type="text" id="data-points-input" value="600">
                 <p id="y-digits-text" class="data-points-after">~ 1200</p>

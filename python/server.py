@@ -326,4 +326,8 @@ if __name__ == '__main__':
     server.add_graph('jtc', array_10_50m, 'column')
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
+    # server.add_graph('test1', np.zeros((24,10000)), 'column')
+    # server.add_graph('test2', np.zeros((20,10000)), 'column')
+    # server.add_graph('test3', np.zeros((15,10000)), 'column')
+    # server.add_graph('test4', np.zeros((30,10000)), 'column')
     server.wait_forever()

@@ -925,6 +925,13 @@ html {
     box-sizing: content-box;
 }
 
+#cache-rate {
+    display: inline-block;
+    height: 100%;
+    line-height: 2vw;
+    padding-left: 2.5vw;
+}
+
 #debug {
     /* padding-top: 0.5vw;
     padding-left: 2vw; */
@@ -950,7 +957,7 @@ html {
 }
 
 
-/* For the footer */
+/* 8. For the footer */
 footer {
     margin-top: 10vw;
     width: 100%;

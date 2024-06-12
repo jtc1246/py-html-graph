@@ -642,7 +642,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         has_request = false;
         current_request_promise_resolve = null;
         console.log(`cache miss, took ${performance.now()-t1} ms`);
-        return return_value;
+        return return_value+1048576;
     }
     var response_length = response_data.byteLength;
     shared_bytes.set(new Uint8Array(response_data), 0);
@@ -671,7 +671,7 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         break;
     }
     console.log(`cache miss, took ${performance.now()-t1} ms`);
-    return response_length;
+    return response_length+1048576;
 };
 
 

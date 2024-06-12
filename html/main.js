@@ -84,6 +84,7 @@ var cache_worker = null;
 var main_to_worker_signal = null;
 var worker_to_main_signal = null;
 var cache_worker_shared_bytes = null;
+var cache_hitting_record = [];
 
 const cache_worker_url = 'data:application/javascript;base64,' + '$jtc.py-html-graph.inside.cacheworkerbase64$';
 
@@ -805,6 +806,13 @@ function createChart() {
                 break;
             }
         }
+        if(result_length >= 1048576){
+            cache_hitting_record.push(false);
+            result_length -= 1048576;
+        } else {
+            cache_hitting_record.push(true);
+        }
+        update_cache_hitting_ratio();
         Atomics.store(worker_to_main_signal, 0, 0);
         var response_data = cache_worker_shared_bytes.buffer.slice(0, result_length);
         var view = new DataView(response_data);
@@ -876,6 +884,16 @@ function createChart() {
     set_x_value();
     return new Chart(ctx, config);
 }
+
+var update_cache_hitting_ratio = () => {
+    if(cache_hitting_record.length>=2000){
+        cache_hitting_record.shift();
+    }
+    const true_count = cache_hitting_record.filter(value => value).length;
+    var ratio = (100 * (true_count / cache_hitting_record.length)).toFixed(2);
+    var cache_rate = document.getElementById('cache-rate');
+    cache_rate.innerHTML = 'Cache hit: ' + ratio + '%';
+};
 
 function createChart_for_show_hide_variable() {
     debug2_element.innerHTML = `currentIndex: ${currentIndex.toFixed(6)}<br>fake_window_size: ${fake_window_size.toFixed(6)}<br>viewWindow: ${viewWindow.toFixed(6)}<br>level: ${level}<br>ratio: ${ratio.toFixed(6)}`;
@@ -1027,6 +1045,13 @@ function createChart_for_show_hide_variable() {
                 break;
             }
         }
+        if(result_length >= 1048576){
+            cache_hitting_record.push(false);
+            result_length -= 1048576;
+        } else {
+            cache_hitting_record.push(true);
+        }
+        update_cache_hitting_ratio();
         Atomics.store(worker_to_main_signal, 0, 0);
         var response_data = cache_worker_shared_bytes.buffer.slice(0, result_length);
         var view = new DataView(response_data);

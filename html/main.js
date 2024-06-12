@@ -105,6 +105,7 @@ let currentIndex = 0;
 let level = 0; // 缩放级别，必须大于等于0，代表从 2^level 个数据点中选一个显示
 let ratio = 1.0;
 var mouseX = 0;
+var mouseY = 0;
 var is_touchpad = false;
 var mouse_pressed = false;
 var prev_mouse_loc = -1;
@@ -112,6 +113,8 @@ var reverse_mouse_direction = false;
 
 var slider_active = false;
 var precise_mouse_x = -1;
+var precise_mouse_y = -1
+var resizing_paddle_active = false;
 
 window.addEventListener('mouseup', () => {
     mouse_pressed = false;
@@ -125,6 +128,7 @@ window.addEventListener('wheel', (event) => {
 
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
+    mouseY = event.clientY;
     // console.log(getMousePosition());
     if (data_loading_mode !== MODE_PRELOAD_AND_CACHE) {
         return;
@@ -1424,8 +1428,21 @@ slider_element.addEventListener('mousedown', () => {
     slider_active = true;
 });
 
+var resizing_paddle = document.getElementById('resize-paddle');
+var resize_prev_loc = -1;
+var prev_wrapper_height = -1;
+resizing_paddle.addEventListener('mousedown', () => {
+    resizing_paddle_active = true;
+    if(precise_mouse_y === -1){
+        resize_prev_loc = mouseY;
+    } else {
+        resize_prev_loc = precise_mouse_y;
+    }
+});
+
 window.addEventListener('mouseup', () => {
     slider_active = false;
+    resizing_paddle_active = false;
 });
 
 window.addEventListener('mousemove', () => {
@@ -1454,6 +1471,29 @@ window.addEventListener('mousemove', () => {
     slider_element.style.setProperty('--line-width-ratio', ratio);
     var new_line_width = document.querySelector('main').clientWidth / 300 * 28 / 100 * Math.pow(8, (ratio - 0.5));
     update_line_width_only(new_line_width);
+});
+
+window.addEventListener('mousemove', () => {
+    var prev_loc = resize_prev_loc;
+    var main_element = document.getElementById('main');
+    var main_width = main_element.clientWidth;
+    if (resizing_paddle_active === false) {
+        return;
+    }
+    var current_mouse_loc = precise_mouse_y;
+    if(current_mouse_loc === -1){
+        current_mouse_loc = mouseY;
+    }
+    resize_prev_loc = current_mouse_loc;
+    var chart_wrapper = document.getElementById('wrapper');
+    var wrapper_height = prev_wrapper_height;
+    if(wrapper_height === -1){
+        wrapper_height = chart_wrapper.clientHeight / main_width * 100;
+    }
+    var new_height = wrapper_height + (current_mouse_loc - prev_loc) / main_width * 100;
+    prev_wrapper_height = new_height;
+    chart_wrapper.style.height = new_height + 'vw';
+    set_y_value(y_range_prev_min, y_range_prev_max)
 });
 
 var reset_line_width = () => {

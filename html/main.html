@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Py-Html-Graph</title>
     <script src="chart.js"></script>
+    <script>
+        (function(d) {
+          var config = {
+            kitId: 'ccp7pog',
+            scriptTimeout: 3000,
+            async: true
+          },
+          h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;h.className+=" wf-loading";tk.src='https://use.typekit.net/'+config.kitId+'.js';tk.async=true;tk.onload=tk.onreadystatechange=function(){a=this.readyState;if(f||a&&a!="complete"&&a!="loaded")return;f=true;clearTimeout(t);try{Typekit.load(config)}catch(e){}};s.parentNode.insertBefore(tk,s)
+        })(document);
+      </script>
     <link rel="stylesheet" href="reset.css">
     <link rel="stylesheet" href="main.css">
 </head>
@@ -35,7 +45,7 @@
                         <!-- <button id="sel-all">Sel all</button>
                         <button id="uns-all">Uns all</button> -->
                         <button id="sel-button" onclick="select_all_variables()"><img id="sel-all"></button>
-                        <button id="uns-button" onclick="unselect_all_variables()""><img id="uns-all"></button>
+                        <button id="uns-button" onclick="unselect_all_variables()"><img id="uns-all"></button>
                     </div>
                 </div>
             </div>
@@ -49,6 +59,7 @@
             </div>
         </div>
 
+        <div id="resize-paddle"><div></div></div>
         <div id="options">
             <label id="fix-y-wrapper">
                 <input type="checkbox" id="fix-y">
@@ -124,6 +135,17 @@
             <p id="debug2">Test</p>
         </div>
     </main>
+    <footer>
+        <div></div>
+        <p>
+            py-html-graph: a high-performance interactive numpy line chart viewer, good supplement for the awful
+            matplotlib
+        </p>
+        <p>
+            Github:
+            <a href="https://github.com/jtc1246/py-html-graph" target="_blank">github.com/jtc1246/py-html-graph</a>
+        </p>
+    </footer>
     <script src="style.js"></script>
     <script src="axis.js"></script>
     <script src="main.js"></script>

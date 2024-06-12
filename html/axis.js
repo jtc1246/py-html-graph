@@ -325,16 +325,19 @@ x_relative_checkbox.addEventListener('change', () => {
 
 var copy_info = async () => {
     var information = '';
-    information += document.getElementById('title').innerHTML + '\n';
-    information += document.getElementById('y-title').innerHTML + '\n';
+    information += document.getElementById('title').textContent + '\n';
+    information += document.getElementById('y-title').textContent + '\n';
     var y_values = document.getElementsByClassName('y-value');
     for (var i = 0; i < y_values.length; i++) {
         information += y_values[i].innerHTML.replace('<br>', '\n');
+    }
+    for(var i=0;i<VARIABLE_NUM;i++){
+        information += VARIABLE_NAMES[i] + '\n';
     }
     var x_values = document.getElementsByClassName('x-value');
     for (var i = 0; i < x_values.length; i++) {
         information += x_values[i].innerHTML.replace('&nbsp;<br class="no-select">', ' ').replace('&nbsp;<br class="no-select">', ' ').replace('<br>', '') + '\n';
     }
-    information += document.getElementById('x-title').innerHTML + '\n';
+    information += document.getElementById('x-title').textContent + '\n';
     await navigator.clipboard.writeText(information);
 };

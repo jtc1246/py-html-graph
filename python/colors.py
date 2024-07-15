@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 
+
+__all__ = ['STD_COLORS', 'generate_colors', 'plot_colors']
+
+
 LIGHTEST_THRESHOLD = 2.5
 
 # pre-generated colors

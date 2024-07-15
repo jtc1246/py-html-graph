@@ -16,6 +16,9 @@ from colors import generate_colors
 from htmls import html_404, dashboard_html
 
 
+__all__ = ['GraphServer']
+
+
 def escape_html(s: str) -> str:
     s = html_escape(s)
     return s.replace('\n', ' ').replace(' ', '&nbsp;')

@@ -6,6 +6,9 @@ from myHttp import http
 from myBasics import strToBase64
 
 
+__all__ = ['start_forward_server']
+
+
 def addr_valid(addr: str) -> bool:
     addr = addr.replace(' ', '')
     ip = addr

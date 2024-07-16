@@ -110,6 +110,7 @@ class GraphServer:
     server.add_graph('my_graph_2', array_2, 'row')
     
     server.wait_forever()
+    
     ```
     Then open the link in the browser, you can see the graphs.
     '''

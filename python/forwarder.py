@@ -148,10 +148,16 @@ class Request(BaseHTTPRequestHandler):
 
 
 def start_forward_server(port: int) -> NoReturn:
+    '''
+    Start the local forward server to access a non-127.0.0.1 server in HTTP mode.
+    
+    For details, see https://github.com/jtc1246/py-html-graph   # TODO
+    '''
     if (port <= 0 or port > 65535):
         raise ValueError('Invalid port number' + str(port))
     server = ThreadingHTTPServer(('127.0.0.1', port), Request)
     start_new_thread(server.serve_forever, ())
+    print(f'Server started,\nLink: https://127.0.0.1:{port}/')
     while True:
         sleep(10)
 

@@ -17,7 +17,7 @@ setup(
     package_data={
         'py_html_graph': ['html/*', 'ssl/*']
     },
-    install_requires=['matplotlib', 'myHttp', 'myBasics', 'mySecrets'],
+    install_requires=['matplotlib', 'myHttp', 'myBasics', 'mySecrets', 'numpy<2'],
     python_requires='>=3.9',
     platforms=["all"],
     license='GPL-2.0 License'

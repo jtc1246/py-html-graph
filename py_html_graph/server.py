@@ -144,30 +144,30 @@ class GraphServer:
                 if (path_segments[-1] == ''):
                     path_segments = path_segments[:-1]
                 if(len(path_segments) == 0 or (path_segments[0] in ('index.html', 'dashboard.html', 'dashboard') and len(path_segments) == 1)):
-                    print('dashboard')
+                    # print('dashboard')
                     self.process_dashboard()
                     return
                 graph_name = path_segments[0]
                 if(graph_name not in this.configs):
-                    print(404)
+                    # print(404)
                     self.process_404()
                     return
                 if (len(path_segments) == 1):
-                    print('html')
+                    # print('html')
                     self.process_html(graph_name)
                     return
                 if (len(path_segments) == 2 and path_segments[1] == 'minmax'):
-                    print('minmax')
+                    # print('minmax')
                     self.process_minmax(graph_name)
                     return
                 if (len(path_segments) == 2):
                     self.process_one_request(path_segments[1], graph_name)
                     return
                 if (len(path_segments) == 3 and path_segments[1] == 'batch'):
-                    print('batch request')
+                    # print('batch request')
                     self.process_batch(path_segments[2], graph_name)
                     return
-                print(404)
+                # print(404)
                 # print(self.path)
                 self.process_404()
                 return
@@ -237,8 +237,8 @@ class GraphServer:
                 array = this.configs[name]['array']
                 data_point_num = this.configs[name]['data_point_num']
                 json_data = json.loads(hexToStr(data))
-                print('single-request: ', end='')
-                print(json_data)
+                # print('single-request: ', end='')
+                # print(json_data)
                 start = json_data['start']
                 end = json_data['end']
                 step = json_data['step']
@@ -320,7 +320,7 @@ class GraphServer:
                 return
 
             def do_POST(self):
-                print('POST 404')
+                # print('POST 404')
                 self.process_404()
                 return
 

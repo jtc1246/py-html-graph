@@ -11,9 +11,10 @@ import ssl
 from mySecrets import hexToStr, toHex
 from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
-from typing import Literal
-from colors import generate_colors
+from typing import Literal, Union
+from colors import generate_colors, STD_COLORS
 from htmls import html_404, dashboard_html
+from time import time
 
 
 __all__ = ['GraphServer']
@@ -48,11 +49,14 @@ def generate_html(base_path: str,
                    .replace("$jtc.py-html-graph.y-title$", escape_html(y_title))
     with open(base_path + 'chart.js', 'r') as f:
         chartjs = f.read()
+    variable_names_tmp = list(variable_names)
+    for i in range(0, len(variable_names)):
+        variable_names_tmp[i] = escape_html(variable_names[i])
     with open(base_path + 'main.js', 'r') as f:
         js = f.read()
         js = js.replace("'$jtc.py-html-graph.data-point-num$'", str(data_point_num)) \
                .replace("'$jtc.py-html-graph.variable-num$'", str(variable_num)) \
-               .replace("'$jtc.py-html-graph.variable-names$'", str(variable_names)) \
+               .replace("'$jtc.py-html-graph.variable-names$'", str(variable_names_tmp)) \
                .replace("'$jtc.py-html-graph.label-colors$'", str(label_colors)) \
                .replace("'$jtc.py-html-graph.data-server-base-url$'", f'"{data_server_url}"')
     with open(base_path + 'reset.css', 'r') as f:
@@ -85,7 +89,6 @@ def generate_html(base_path: str,
 
 class GraphServer:
     def __init__(this, http_port:int = None, https_port:int = None):
-# def create_request_class(name_: str, array_: np.ndarray, direction: str = 'row') -> type:
         if(http_port == None and https_port == None):
             raise TypeError("You must provide at least one of http_port and https_port.")
         if(http_port != None and type(http_port) != int):
@@ -97,8 +100,6 @@ class GraphServer:
         this.http_port = http_port
         this.https_port = https_port
         this.configs = {}
-        # this.port = port
-        # this.mode = mode
 
         class Request(BaseHTTPRequestHandler):
             def do_GET(self):
@@ -291,7 +292,26 @@ class GraphServer:
             
         this.RequestClass = Request
     
-    def add_graph(this, name: str, array: np.ndarray, direction: str = 'row'):
+    def add_graph(this, 
+                  name: str, array: np.ndarray, direction: str = 'row',
+                  title: str = 'The title of graph',
+                  x_start_ms: int = 0,
+                  x_step_ms: int = 1000,
+                  x_title: str = 'The description of X',
+                  y_title: str = 'The description of Y',
+                  label_colors: Union[list[str], Literal['STD', 'GENRERATE']] = 'STD',
+                  label_names: list[str] = None):
+        if(name in this.configs):
+            raise ValueError(f"Graph {name} already exists.")
+        if(name == ''):
+            raise TypeError("Graph name can't be empty.")
+        allowed_characters = "!*'();:@&=+$,/[]-_=~."
+        allowed_characters += '0123456789'
+        allowed_characters += 'abcdefghijklmnopqrstuvwxyz'
+        allowed_characters += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        for c in name:
+            if(c not in allowed_characters):
+                raise ValueError(f"Invalid character '{c}' in graph name. Graph name can only contain characters in 0-9,a-z,A-Z and !*'();:@&=+$,/[]-_=~.")
         config = {}
         config['array_min'] = np.min(array)
         config['array_max'] = np.max(array)
@@ -303,13 +323,27 @@ class GraphServer:
             config['variable_num'] = array.shape[0]
             config['data_point_num'] = array.shape[1]
             config['array'] = array
-        config['names'] = [f'Name {i}' for i in range(1, config['variable_num'] + 1)]
-        config['colors'] = generate_colors(config['variable_num'], 10)
-        config['title'] = 'The title of graph'
-        config['x_title'] = 'The description of X'
-        config['y_title'] = 'The description of Y'
-        config['x_start_ms'] = 0
-        config['x_step_ms'] = 1000
+        if(label_names == None):
+            label_names = [f'Name {i}' for i in range(1, config['variable_num'] + 1)]
+        if(len(label_names) != config['variable_num']):
+            raise ValueError(f"There are {config['variable_num']} variables, but {len(label_names)} label names provided.")
+        if (label_colors not in ('STD', 'GENRERATE') and type(label_colors) != list):
+            raise TypeError("label_colors can only be 'STD', 'GENRERATE' or a list of colors (str, #rrggbb).")
+        if(label_colors == 'STD' and config['variable_num'] > len(STD_COLORS)):
+            label_colors = 'GENRERATE'
+        if(label_colors == 'STD'):
+            label_colors = STD_COLORS[config['variable_num']]
+        if(label_colors == 'GENRERATE'):
+            label_colors = generate_colors(config['variable_num'], 3)
+        if(len(label_colors) != config['variable_num']):
+            raise ValueError(f"There are {config['variable_num']} variables, but {len(label_colors)} colors provided.")
+        config['names'] = label_names
+        config['colors'] = label_colors
+        config['title'] = title
+        config['x_title'] = x_title
+        config['y_title'] = y_title
+        config['x_start_ms'] = x_start_ms
+        config['x_step_ms'] = x_step_ms
         config['max_whole_level_cache_size'] = 0
         this.configs[name] = config
     
@@ -327,14 +361,6 @@ class GraphServer:
         print('Server started, ')
         print(f'HTTP link:  http://127.0.0.1:{this.http_port}')
         print(f'HTTPS link: https://<ip>:{this.https_port}')
-        # this.server = ThreadingHTTPServer(('0.0.0.0', this.port), this.RequestClass)
-        # if(this.mode == 'https'):
-        #     this.server.socket = ssl.wrap_socket(this.server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
-        # start_new_thread(this.server.serve_forever, ())
-        # if(this.mode == 'http'):
-        #     print(f"Server started, link: http://127.0.0.1:{this.port}")
-        # else:
-        #     print(f"Server started, using https, listening on port {this.port}. Link: https://<ip>:{this.port}")
     
     def wait_forever(this):
         while True:
@@ -348,11 +374,14 @@ if __name__ == '__main__':
 
     server = GraphServer(9010, 9012)
     server.start()
-    server.add_graph('jtc', array_10_50m, 'column')
+    server.add_graph('jtc', array_10_50m, 'column', 
+                     x_start_ms=int(time()*1000), x_step_ms=200, 
+                     x_title='Time', y_title='Price', title='Price    comparison',
+                     label_colors='STD', label_names=['BT    C', 'ETH', 'BNB', 'ADA', 'DOGE', 'XRP', 'DOT', 'UNI', 'SOL', 'LTC'])
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
     # server.add_graph('test1', np.zeros((24,10000)), 'column')
     # server.add_graph('test2', np.zeros((20,10000)), 'column')
     # server.add_graph('test3', np.zeros((15,10000)), 'column')
-    # server.add_graph('test4', np.zeros((30,10000)), 'column')
+    server.add_graph('test4', np.zeros((100,10000)), 'column')
     server.wait_forever()

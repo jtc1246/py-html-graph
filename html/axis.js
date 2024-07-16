@@ -323,6 +323,10 @@ x_relative_checkbox.addEventListener('change', () => {
     set_x_value();
 });
 
+var replace_all = (str, a, b) => {
+    return str.split(a).join(b);
+}
+
 var copy_info = async () => {
     var information = '';
     information += document.getElementById('title').textContent + '\n';
@@ -332,7 +336,7 @@ var copy_info = async () => {
         information += y_values[i].innerHTML.replace('<br>', '\n');
     }
     for(var i=0;i<VARIABLE_NUM;i++){
-        information += VARIABLE_NAMES[i] + '\n';
+        information += replace_all(VARIABLE_NAMES[i], '&nbsp;', ' ') + '\n';
     }
     var x_values = document.getElementsByClassName('x-value');
     for (var i = 0; i < x_values.length; i++) {

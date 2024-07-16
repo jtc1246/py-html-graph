@@ -293,7 +293,7 @@ var set_labels = () => {
         color_line.style.backgroundColor = LABEL_COLORS[i];
         this_label.appendChild(color_line);
         var label_text = document.createElement('p');
-        label_text.textContent = VARIABLE_NAMES[i];
+        label_text.innerHTML = VARIABLE_NAMES[i];
         this_label.appendChild(label_text);
         label_container.appendChild(this_label);
         var this_width = label_text.getBoundingClientRect().width;

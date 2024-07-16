@@ -4,6 +4,7 @@ from _thread import start_new_thread
 from time import sleep
 from myHttp import http
 from myBasics import strToBase64
+from typing import NoReturn
 
 
 __all__ = ['start_forward_server']
@@ -146,7 +147,7 @@ class Request(BaseHTTPRequestHandler):
         pass
 
 
-def start_forward_server(port: int):
+def start_forward_server(port: int) -> NoReturn:
     if (port <= 0 or port > 65535):
         raise ValueError('Invalid port number' + str(port))
     server = ThreadingHTTPServer(('127.0.0.1', port), Request)

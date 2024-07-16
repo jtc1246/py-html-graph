@@ -11,7 +11,7 @@ import ssl
 from mySecrets import hexToStr, toHex
 from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
-from typing import Literal, Union
+from typing import Literal, Union, NoReturn
 from colors import generate_colors, STD_COLORS
 from htmls import html_404, dashboard_html
 from time import time
@@ -333,7 +333,7 @@ class GraphServer:
                   x_title: str = 'The description of X',
                   y_title: str = 'The description of Y',
                   label_colors: Union[list[str], Literal['STD', 'GENRERATE']] = 'STD',
-                  label_names: list[str] = None):
+                  label_names: list[str] = None) -> None:
         '''
         Add a graph to the server.
         
@@ -403,7 +403,7 @@ class GraphServer:
         this.configs[name] = config
     
     
-    def start(this):
+    def start(this) -> None:
         '''
         Start the server asynchronizely.
         '''
@@ -420,7 +420,7 @@ class GraphServer:
         print(f'HTTP link:  http://127.0.0.1:{this.http_port}')
         print(f'HTTPS link: https://<ip>:{this.https_port}')
     
-    def wait_forever(this):
+    def wait_forever(this) -> NoReturn:
         '''
         Just to block the main thread.
         '''

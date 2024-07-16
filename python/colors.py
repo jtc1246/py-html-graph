@@ -8,7 +8,7 @@ __all__ = ['STD_COLORS', 'generate_colors', 'plot_colors']
 
 LIGHTEST_THRESHOLD = 2.5
 
-# pre-generated colors
+# pre-generated colors, has the color set of <= 100 variables, use STD_COLORS[i] to get the color set of i variables
 STD_COLORS = [
     [],
     ['#ff0000'],
@@ -163,8 +163,10 @@ def maximize_color_separation(colors, iterations=2000):
     return colors
 
 
-def plot_colors(hex_colors):
-    """Plot colors that are provided in hexadecimal format."""
+def plot_colors(hex_colors:list[str]) -> None:
+    """
+    Plot the generated colors. hex_colors is a list of hex str, in #rrggbb format
+    """
     plt.figure(figsize=(12, 2), facecolor='#b8b8b8')
     for i, hex_color in enumerate(hex_colors):
         plt.fill_between([i, i+1], 0, 1, color=hex_color)
@@ -196,7 +198,20 @@ def np_to_hex(colors):
         result.append(f'#{r:02x}{g:02x}{b:02x}')
     return result
 
-def generate_colors(num: int, trial: int = 10, fixed=False):
+def generate_colors(num: int, trial: int = 10, fixed=False) -> list[str]:
+    '''
+    Generate the colors of num variables, each of them as different as possible
+    
+    Colors are put in RGB 3D space, will try to make the straight-line distance between each two of them as large as possible
+    
+    Will return a list of str, each str is a color in hex format (#rrggbb), can be passed in to add_graph directly
+    
+    Parameters:
+    
+    1. num: the number of variables
+    2. trail: will try to generate trail times, and find the best one
+    3. fixed: if True, the result will become deterministic
+    '''
     best_score = 10 * 100000000000
     best_colors = None
     if (fixed):

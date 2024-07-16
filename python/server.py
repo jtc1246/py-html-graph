@@ -88,7 +88,40 @@ def generate_html(base_path: str,
 
 
 class GraphServer:
+    '''
+    The server to show graphs in the browser.
+    
+    Methods:
+    
+    1. add_graph: add a graph to the server.
+    2. start: start the server asynchronizely.
+    3. wait_forever: block the main thread.
+    
+    Example:
+    
+    ```
+    server = GraphServer(8080, 4443)
+    server.start()
+    
+    array_1 = np.zeros((10, 1000000), dtype=np.float32)
+    server.add_graph('my_graph_1', array_1, 'column')
+    
+    array_2 = np.zeros((1000000, 10), dtype=np.float32)
+    server.add_graph('my_graph_1', array_2, 'row')
+    
+    server.wait_forever()
+    
+    ```
+    Then open the link in the browser, you can see the graphs.
+    '''
     def __init__(this, http_port:int = None, https_port:int = None):
+        '''
+        Create a server to show graphs in the browser.
+        
+        Serve HTTP in http_port, serve HTTPS in https_port.
+        
+        You must provide at least one of them.
+        '''
         if(http_port == None and https_port == None):
             raise TypeError("You must provide at least one of http_port and https_port.")
         if(http_port != None and type(http_port) != int):
@@ -293,7 +326,7 @@ class GraphServer:
         this.RequestClass = Request
     
     def add_graph(this, 
-                  name: str, array: np.ndarray, direction: str = 'row',
+                  name: str, array: np.ndarray, direction: Literal['row', 'column'] = 'row',
                   title: str = 'The title of graph',
                   x_start_ms: int = 0,
                   x_step_ms: int = 1000,
@@ -301,6 +334,26 @@ class GraphServer:
                   y_title: str = 'The description of Y',
                   label_colors: Union[list[str], Literal['STD', 'GENRERATE']] = 'STD',
                   label_names: list[str] = None):
+        '''
+        Add a graph to the server.
+        
+        Parameters:
+        
+        1. name: the name displayed in the dashboard, two graphs can't have the same name. Can only contain characters in 0-9,a-z,A-Z and !*'();:@&=+$,/[]-_=~.
+        2. array: the data of the graph, in numpy, must in np.float32.
+        3. direction: 'row' or 'column'. 'row' means each row is the data at one time point, 'column' means each column is the data at one time point. <br>
+        For example, I have 10 variables and 50000 data points, if the shape is (50000, 10), it's 'row', if the shape is (10, 50000), it's 'column'.
+        4. title: the title of the graph.
+        5. x_start_ms: the time of the first data point, in milliseconds.
+        6. x_step_ms: the time interval between two data points, in milliseconds.
+        7. x_title: the description of X.
+        8. y_title: the description of Y.
+        9. label_colors: the colors of the lines, can be 'STD', 'GENRERATE' or a list of colors (str, in #rrggbb).<br>
+        If 'STD', it will use the pre-generated colors. If 'GENRERATE', it will generate colors automatically. <br>
+        10. label_names: the names of the variables, if not provided, it will be generated automatically.
+        '''
+        if(array.dtype != np.float32):
+            raise TypeError("Array must in np.float32.")
         if(name in this.configs):
             raise ValueError(f"Graph {name} already exists.")
         if(name == ''):
@@ -315,6 +368,8 @@ class GraphServer:
         config = {}
         config['array_min'] = np.min(array)
         config['array_max'] = np.max(array)
+        if(direction not in ('row', 'column')):
+            raise Typerror("direction can only be 'row' or 'column'.")
         if(direction == 'row'):
             config['variable_num'] = array.shape[1]
             config['data_point_num'] = array.shape[0]
@@ -349,6 +404,9 @@ class GraphServer:
     
     
     def start(this):
+        '''
+        Start the server asynchronizely.
+        '''
         this.http_server = None
         this.https_server = None
         if (this.http_port != None):
@@ -363,6 +421,9 @@ class GraphServer:
         print(f'HTTPS link: https://<ip>:{this.https_port}')
     
     def wait_forever(this):
+        '''
+        Just to block the main thread.
+        '''
         while True:
             sleep(10)
 
@@ -376,12 +437,12 @@ if __name__ == '__main__':
     server.start()
     server.add_graph('jtc', array_10_50m, 'column', 
                      x_start_ms=int(time()*1000), x_step_ms=200, 
-                     x_title='Time', y_title='Price', title='Price    comparison',
-                     label_colors='STD', label_names=['BT    C', 'ETH', 'BNB', 'ADA', 'DOGE', 'XRP', 'DOT', 'UNI', 'SOL', 'LTC'])
+                     x_title='Time', y_title='Price', title='Price comparison',
+                     label_colors='STD', label_names=['BTC', 'ETH', 'BNB', 'ADA', 'DOGE', 'XRP', 'DOT', 'UNI', 'SOL', 'LTC'])
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
     # server.add_graph('test1', np.zeros((24,10000)), 'column')
     # server.add_graph('test2', np.zeros((20,10000)), 'column')
     # server.add_graph('test3', np.zeros((15,10000)), 'column')
-    server.add_graph('test4', np.zeros((100,10000)), 'column')
+    server.add_graph('test4', np.zeros((100,10000), dtype=np.float32), 'column')
     server.wait_forever()

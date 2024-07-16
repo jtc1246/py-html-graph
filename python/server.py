@@ -107,10 +107,9 @@ class GraphServer:
     server.add_graph('my_graph_1', array_1, 'column')
     
     array_2 = np.zeros((1000000, 10), dtype=np.float32)
-    server.add_graph('my_graph_1', array_2, 'row')
+    server.add_graph('my_graph_2', array_2, 'row')
     
     server.wait_forever()
-    
     ```
     Then open the link in the browser, you can see the graphs.
     '''
@@ -441,8 +440,5 @@ if __name__ == '__main__':
                      label_colors='STD', label_names=['BTC', 'ETH', 'BNB', 'ADA', 'DOGE', 'XRP', 'DOT', 'UNI', 'SOL', 'LTC'])
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')
     server.add_graph('tmp', array_10_50m[0:6,0:20000000].T, 'row')
-    # server.add_graph('test1', np.zeros((24,10000)), 'column')
-    # server.add_graph('test2', np.zeros((20,10000)), 'column')
-    # server.add_graph('test3', np.zeros((15,10000)), 'column')
     server.add_graph('test4', np.zeros((100,10000), dtype=np.float32), 'column')
     server.wait_forever()

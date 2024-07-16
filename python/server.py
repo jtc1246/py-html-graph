@@ -84,11 +84,21 @@ def generate_html(base_path: str,
 
 
 class GraphServer:
-    def __init__(this, port: int, mode: Literal['http', 'https'] = 'http'):
+    def __init__(this, http_port:int = None, https_port:int = None):
 # def create_request_class(name_: str, array_: np.ndarray, direction: str = 'row') -> type:
+        if(http_port == None and https_port == None):
+            raise TypeError("You must provide at least one of http_port and https_port.")
+        if(http_port != None and type(http_port) != int):
+            raise TypeError("http_port must be int.")
+        if(https_port != None and type(https_port) != int):
+            raise TypeError("https_port must be int.")
+        if(http_port == https_port):
+            raise ValueError("http_port and https_port can't be the same.")
+        this.http_port = http_port
+        this.https_port = https_port
         this.configs = {}
-        this.port = port
-        this.mode = mode
+        # this.port = port
+        # this.mode = mode
 
         class Request(BaseHTTPRequestHandler):
             def do_GET(self):
@@ -305,14 +315,26 @@ class GraphServer:
     
     
     def start(this):
-        this.server = ThreadingHTTPServer(('0.0.0.0', this.port), this.RequestClass)
-        if(this.mode == 'https'):
-            this.server.socket = ssl.wrap_socket(this.server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
-        start_new_thread(this.server.serve_forever, ())
-        if(this.mode == 'http'):
-            print(f"Server started, link: http://127.0.0.1:{this.port}")
-        else:
-            print(f"Server started, using https, listening on port {this.port}. Link: https://<ip>:{this.port}")
+        this.http_server = None
+        this.https_server = None
+        if (this.http_port != None):
+            this.http_server = ThreadingHTTPServer(('0.0.0.0', this.http_port), this.RequestClass)
+            start_new_thread(this.http_server.serve_forever, ())
+        if (this.https_port != None):
+            this.https_server = ThreadingHTTPServer(('0.0.0.0', this.https_port), this.RequestClass)
+            this.https_server.socket = ssl.wrap_socket(this.https_server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
+            start_new_thread(this.https_server.serve_forever, ())
+        print('Server started, ')
+        print(f'HTTP link:  http://127.0.0.1:{this.http_port}')
+        print(f'HTTPS link: https://<ip>:{this.https_port}')
+        # this.server = ThreadingHTTPServer(('0.0.0.0', this.port), this.RequestClass)
+        # if(this.mode == 'https'):
+        #     this.server.socket = ssl.wrap_socket(this.server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
+        # start_new_thread(this.server.serve_forever, ())
+        # if(this.mode == 'http'):
+        #     print(f"Server started, link: http://127.0.0.1:{this.port}")
+        # else:
+        #     print(f"Server started, using https, listening on port {this.port}. Link: https://<ip>:{this.port}")
     
     def wait_forever(this):
         while True:
@@ -324,7 +346,7 @@ if __name__ == '__main__':
     array_10_50m = np.frombuffer(data_10_50m, dtype=np.float32).reshape((10, 50000000)).byteswap()
     del data_10_50m
 
-    server = GraphServer(9010, 'http')
+    server = GraphServer(9010, 9012)
     server.start()
     server.add_graph('jtc', array_10_50m, 'column')
     server.add_graph('mygraph', array_10_50m[0:6,0:20000000], 'column')

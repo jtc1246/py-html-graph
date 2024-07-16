@@ -15,9 +15,13 @@ from typing import Literal, Union, NoReturn
 from colors import generate_colors, STD_COLORS
 from htmls import html_404, dashboard_html
 from time import time
+import os
 
 
 __all__ = ['GraphServer']
+
+_base_path = os.path.abspath(__file__)
+_base_path = os.path.dirname(_base_path)
 
 
 def escape_html(s: str) -> str:
@@ -200,7 +204,7 @@ class GraphServer:
                 self.send_cors_header()
                 domain = self.headers['Host']
                 data_server_url = f'/{name}'
-                html = generate_html('../html',
+                html = generate_html(_base_path+'/html',
                                     data_point_num=this.configs[name]['data_point_num'],
                                     variable_num=this.configs[name]['variable_num'],
                                     variable_names=this.configs[name]['names'],
@@ -414,7 +418,7 @@ class GraphServer:
             start_new_thread(this.http_server.serve_forever, ())
         if (this.https_port != None):
             this.https_server = ThreadingHTTPServer(('0.0.0.0', this.https_port), this.RequestClass)
-            this.https_server.socket = ssl.wrap_socket(this.https_server.socket, certfile='./ssl/certificate.crt', keyfile='./ssl/private.key', server_side=True)
+            this.https_server.socket = ssl.wrap_socket(this.https_server.socket, certfile=_base_path+'/ssl/certificate.crt', keyfile=_base_path+'/ssl/private.key', server_side=True)
             start_new_thread(this.https_server.serve_forever, ())
         print('Server started, ')
         print(f'HTTP link:  http://127.0.0.1:{this.http_port}')

@@ -1,10 +1,11 @@
-from htmls import forwarder_html
+from .htmls import forwarder_html
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from _thread import start_new_thread
 from time import sleep
 from myHttp import http
 from myBasics import strToBase64
 from typing import NoReturn
+import socket
 
 
 __all__ = ['start_forward_server']
@@ -147,6 +148,12 @@ class Request(BaseHTTPRequestHandler):
         pass
 
 
+class MyHTTPServer(ThreadingHTTPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # 设置套接字选项
+        super().server_bind()
+
+
 def start_forward_server(port: int) -> NoReturn:
     '''
     Start the local forward server to access a non-127.0.0.1 server in HTTP mode.
@@ -155,7 +162,7 @@ def start_forward_server(port: int) -> NoReturn:
     '''
     if (port <= 0 or port > 65535):
         raise ValueError('Invalid port number' + str(port))
-    server = ThreadingHTTPServer(('127.0.0.1', port), Request)
+    server = MyHTTPServer(('127.0.0.1', port), Request)
     start_new_thread(server.serve_forever, ())
     print(f'Server started,\nLink: https://127.0.0.1:{port}/')
     while True:

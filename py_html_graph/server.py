@@ -12,8 +12,8 @@ from mySecrets import hexToStr, toHex
 from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
 from typing import Literal, Union, NoReturn
-from colors import generate_colors, STD_COLORS
-from htmls import html_404, dashboard_html
+from .colors import generate_colors, STD_COLORS
+from .htmls import html_404, dashboard_html
 from time import time
 import os
 

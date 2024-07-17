@@ -145,11 +145,6 @@ var cache_init = () => {
     if (MAX_CACHE_ALL_LEVEL < 0) {
         MAX_CACHE_ALL_LEVEL = 0;
     }
-    // console.log("Max level: ", MAX_LEVEL);
-    // console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
-    // for (var i = 0; i < MAX_LEVEL; i++) {
-    //     cached_data[i] = [];
-    // }
     do_whole_level_cache();
 };
 
@@ -338,7 +333,6 @@ var create_requests = () => {
     var all_keys = Object.keys(required_cache_area);
     for (var j = 0; j < all_keys.length; j++){
         var unrequested_parts = [];
-        // var inside = false;
         var current_start = -1;
         var global_start = required_cache_area[all_keys[j]].start;
         var global_end = required_cache_area[all_keys[j]].end;
@@ -379,15 +373,9 @@ var create_requests = () => {
                 tr: 1 // transpose
             };
             json_data = stringToHex(JSON.stringify(json_data));
-            // var url = BASE_URL + '/' + json_data;
-            // var request = new XMLHttpRequest();
-            // request.open('GET', url, true);
-            // request.responseType = 'arraybuffer';
             var request_id = generate_request_id();
             ongoing_requests.add(request_id);
             var callback = create_request_callbacks(null, start_index, end_index, this_level, step, request_id);
-            // request.onload = callback;
-            // request.send();
             request_manager.add(json_data, callback, (end_index - start_index) * 4 * VARIABLE_NUM);
             cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
         }
@@ -479,13 +467,7 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
             tr: 1 // transpose
         };
         json_data = stringToHex(JSON.stringify(json_data));
-        // var url = BASE_URL + '/' + json_data;
-        // var request = new XMLHttpRequest();
-        // request.open('GET', url, true);
-        // request.responseType = 'arraybuffer';
         var callback = create_request_callbacks(null, shared_start, shared_end, level, step, request_id);
-        // request.onload = callback;
-        // request.send();
         request_manager.add(json_data, callback, (shared_end - shared_start) * 4 * VARIABLE_NUM);``
         // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
         // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
@@ -516,13 +498,7 @@ var update_cache = (mouse_move_only) => {
 }
 
 var access_data_tmp = async (start, end, step, window_size, window_max) => {
-    // current_request_start = start;
-    // current_request_end = end;
-    // current_request_step = step;
-    // current_window_max = window_max;
     var level = Math.round(Math.log2(step));
-    // current_request_level = level;
-    // has_request = true;
     console.log('resolved by previous cache requests');
     var length = Math.floor((end - 1 - start) / step) + 1;
     var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
@@ -733,7 +709,6 @@ var main_msg_listener = async (value) => {
             console.log("Statistics printed.");
         } else if (this_value >= 10000) {
             mouse_position = (this_value - 10000) / 10000;
-            // console.log("Mouse position: ", mouse_position);
             returned_value = 1;
         } else {
             throw "Unknown signal: " + this_value;

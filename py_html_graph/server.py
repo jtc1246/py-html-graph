@@ -377,7 +377,7 @@ class GraphServer:
         config['array_min'] = np.min(array)
         config['array_max'] = np.max(array)
         if(direction not in ('row', 'column')):
-            raise Typerror("direction can only be 'row' or 'column'.")
+            raise TypeError("direction can only be 'row' or 'column'.")
         if(direction == 'row'):
             config['variable_num'] = array.shape[1]
             config['data_point_num'] = array.shape[0]

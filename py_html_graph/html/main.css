@@ -939,6 +939,8 @@ html {
     line-height: 2vw;
     padding-left: 1vw;
     width: 18vw;
+    overflow: visible !important;
+    white-space: nowrap;
 }
 
 #http-https {

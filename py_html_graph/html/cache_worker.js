@@ -145,8 +145,8 @@ var cache_init = () => {
     if (MAX_CACHE_ALL_LEVEL < 0) {
         MAX_CACHE_ALL_LEVEL = 0;
     }
-    console.log("Max level: ", MAX_LEVEL);
-    console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
+    // console.log("Max level: ", MAX_LEVEL);
+    // console.log("Max cache all level: ", MAX_CACHE_ALL_LEVEL);
     // for (var i = 0; i < MAX_LEVEL; i++) {
     //     cached_data[i] = [];
     // }

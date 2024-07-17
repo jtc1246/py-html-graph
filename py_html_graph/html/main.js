@@ -10,12 +10,8 @@ var debug_element = document.getElementById('debug');
 var debug2_element = document.getElementById('debug2');
 
 const VARIABLE_NUM = '$jtc.py-html-graph.variable-num$'; // user-configurable
-// const VARIABLE_NAMES = Array.from({ length: VARIABLE_NUM }, (_, i) => `Name ${i + 1}`);
-// VARIABLE_NAMES[VARIABLE_NAMES.length - 2] = '<div>';
-// VARIABLE_NAMES[VARIABLE_NAMES.length - 1] = 'Name 1000';
 const VARIABLE_NAMES = '$jtc.py-html-graph.variable-names$'; // user-configurable
 const VARIABLE_SHOW = Array.from({ length: VARIABLE_NUM }, (_, i) => true);
-// const LABEL_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 const LABEL_COLORS = '$jtc.py-html-graph.label-colors$'; // user-configurable
 
 const MODE_LOAD_ONCE = 12000001;
@@ -23,8 +19,6 @@ const MODE_LOAD_AT_UPDATE = 12000002;
 const MODE_PRELOAD_AND_CACHE = 12000003;
 
 const data_loading_mode = MODE_PRELOAD_AND_CACHE;
-// const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
-// const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
 var preload_and_cache_base_url = '$jtc.py-html-graph.data-server-base-url$'; // user-configurable
 var HTTP_PORT_IN_HTTPS = '$jtc.py-html-graph.http-port-in-https$'; // open browser with --allow-running-insecure-content, open page with https, but load data with http
 
@@ -50,7 +44,9 @@ if(HTTP_PORT_IN_HTTPS.startsWith('$') === false && window.location.protocol === 
         request.open('GET', tmp_url, false);
         request.send();
         preload_and_cache_base_url = tmp_url + preload_and_cache_base_url;
+        console.log("Page in HTTPS, data able to be loaded in HTTP.");
     }catch(e){
+        console.log("Page in HTTPS, unable to load data in HTTP, try adding --allow-running-insecure-content in browser start command.");
     }
 }
 
@@ -148,13 +144,11 @@ window.addEventListener('wheel', (event) => {
 document.addEventListener('mousemove', function (event) {
     mouseX = event.clientX;
     mouseY = event.clientY;
-    // console.log(getMousePosition());
     if (data_loading_mode !== MODE_PRELOAD_AND_CACHE) {
         return;
     }
     var mouse_x_value = getMousePosition();
     var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
-    // console.log(mouse_left_ratio);
     if(mouse_left_ratio<0){
         mouse_left_ratio = 0;
     }
@@ -174,10 +168,6 @@ document.addEventListener('mousemove', function (event) {
 });
 
 chart_element.addEventListener('wheel', function (event) {
-    // if(mouseX!==0){
-    //     mouseX = event.clientX;
-    //     return;
-    // }
     if(mouseX===event.clientX){
         return;
     }
@@ -187,7 +177,6 @@ chart_element.addEventListener('wheel', function (event) {
     }
     var mouse_x_value = getMousePosition();
     var mouse_left_ratio = (mouse_x_value - currentIndex) / fake_window_size;
-    // console.log(mouse_left_ratio);
     if(mouse_left_ratio<0){
         mouse_left_ratio = 0;
     }
@@ -249,13 +238,7 @@ var create_label_callback = (index) => {
         if (element.checked) {
             VARIABLE_SHOW[tmp] = true;
         } else {
-            // not prefer to perform like this, just to prevent the bug when there is no variables
-            // will remove later, because will add unselect all button
             const trueCount = VARIABLE_SHOW.filter(value => value).length;
-            // if(trueCount === 1) {
-            //     element.checked = true;
-            //     return;
-            // }
             VARIABLE_SHOW[tmp] = false;
         }
         myChart.destroy();
@@ -533,7 +516,7 @@ createData().then((dataSets) => {
         // console.log(`Global max: ${global_max}, Global min: ${global_min}`);
     }
     all_finished = true;
-    console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
+    // console.log(`Time to generate data: ${performance.now() - generating_start_time} ms`);
     document.querySelector('body').style.display = 'block';
     updateChart();
     element.addEventListener('wheel', handle_wheel, { passive: false });
@@ -1282,7 +1265,6 @@ function handle_wheel(event) {
 }
 
 function handle_x_drag(moved_x) {
-    // event.preventDefault();
     if (graph_locked) {
         return;
     }

@@ -43,7 +43,7 @@ class BatchHttpManager {
         var url = BASE_URL + '/batch/' + stringToHex(JSON.stringify(urls));
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
-        request.timeout = 30000; //just to prevent last too long
+        request.timeout = 500; //just to prevent last too long
         request.responseType = 'arraybuffer';
         request.onload = () => {
             // console.log('batch request success');

@@ -497,7 +497,7 @@ var update_cache = (mouse_move_only) => {
     create_requests();
 }
 
-var access_data_tmp = async (start, end, step, window_size, window_max) => {
+var access_data_tmp = (start, end, step, window_size, window_max) => {
     var level = Math.round(Math.log2(step));
     console.log('resolved by previous cache requests');
     var length = Math.floor((end - 1 - start) / step) + 1;
@@ -670,7 +670,7 @@ var create_fixed_interval_request = (url_, request_id_, resolve_)=> {
             resolve(request.response);
         }
     };
-    request.timeout = 30000; // just to prevent last too long
+    request.timeout = 500; // just to prevent last too long
     request.send();
     setTimeout(create_fixed_interval_request, 50, url, request_id, resolve);
 };

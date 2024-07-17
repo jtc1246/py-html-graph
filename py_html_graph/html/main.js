@@ -45,8 +45,12 @@ if(HTTP_PORT_IN_HTTPS.startsWith('$') === false && window.location.protocol === 
         request.send();
         preload_and_cache_base_url = tmp_url + preload_and_cache_base_url;
         console.log("Page in HTTPS, data able to be loaded in HTTP.");
+        document.getElementById('http-https').innerHTML = 'HTTP';
+        document.getElementById('http-https').style.color = 'green';
     }catch(e){
         console.log("Page in HTTPS, unable to load data in HTTP, try adding --allow-running-insecure-content in browser start command.");
+        document.getElementById('http-https').innerHTML = 'HTTPS';
+        document.getElementById('http-https').style.color = 'red';
     }
 }
 
@@ -1548,8 +1552,10 @@ var debug_checkbox_element = document.getElementById('debug-mode');
 debug_checkbox_element.addEventListener('change', () => {
     if (debug_checkbox_element.checked) {
         document.getElementById('debug-info').style.display = 'block';
+        document.getElementById('debug-ph').style.display = 'none';
     } else {
         document.getElementById('debug-info').style.display = 'none';
+        document.getElementById('debug-ph').style.display = 'block';
     }
 });
 

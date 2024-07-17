@@ -26,14 +26,32 @@ const data_loading_mode = MODE_PRELOAD_AND_CACHE;
 // const load_once_url = 'http://10.0.0.134:9012/data_10_5m';
 // const load_at_update_base_url = 'http://10.0.0.134:9012/window_data';
 var preload_and_cache_base_url = '$jtc.py-html-graph.data-server-base-url$'; // user-configurable
+var HTTP_PORT_IN_HTTPS = '$jtc.py-html-graph.http-port-in-https$'; // open browser with --allow-running-insecure-content, open page with https, but load data with http
 
 // 直接在 base64 里面替换, 总共就3种情况
 var server_loc = '$$$jtc.py-html-graph.data-server-loc$$$'; // start with http, should not have / at the end
 
 server_loc = server_loc.split('$').join('');
 
+// the situation of using forwarder
 if(server_loc.startsWith('http')){
     preload_and_cache_base_url = server_loc + preload_and_cache_base_url;
+}
+
+if(HTTP_PORT_IN_HTTPS.startsWith('$') === false && window.location.protocol === 'https:'){
+    var tmp_url = 'http://';
+    var host_str = window.location.host;
+    if(host_str.indexOf(':') !== -1){
+        host_str = host_str.split(':')[0];
+    }
+    tmp_url = tmp_url + host_str + ':' + HTTP_PORT_IN_HTTPS;
+    var request = new XMLHttpRequest();
+    try{
+        request.open('GET', tmp_url, false);
+        request.send();
+        preload_and_cache_base_url = tmp_url + preload_and_cache_base_url;
+    }catch(e){
+    }
 }
 
 

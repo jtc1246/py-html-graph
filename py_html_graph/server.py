@@ -43,7 +43,8 @@ def generate_html(base_path: str,
                   variable_names: list[str] = None,  # generate automatically if it's None
                   label_colors: list[str] = None,  # generate automatically if it's None
                   data_server_url: str = None,  # required
-                  max_whole_level_cache_size: int = 0) -> str:
+                  max_whole_level_cache_size: int = 0,
+                  http_port: int = None) -> str:
     if (not base_path.endswith('/')):
         base_path += '/'
     with open(base_path + 'main.html', 'r') as f:
@@ -63,6 +64,8 @@ def generate_html(base_path: str,
                .replace("'$jtc.py-html-graph.variable-names$'", str(variable_names_tmp)) \
                .replace("'$jtc.py-html-graph.label-colors$'", str(label_colors)) \
                .replace("'$jtc.py-html-graph.data-server-base-url$'", f'"{data_server_url}"')
+        if(http_port != None):
+            js = js.replace("'$jtc.py-html-graph.http-port-in-https$'", f"'{str(http_port)}'")
     with open(base_path + 'reset.css', 'r') as f:
         reset = f.read()
     with open(base_path + 'main.css', 'r') as f:
@@ -215,7 +218,8 @@ class GraphServer:
                                     y_title=this.configs[name]['y_title'],
                                     x_start_ms=this.configs[name]['x_start_ms'],
                                     x_step_ms=this.configs[name]['x_step_ms'],
-                                    max_whole_level_cache_size=this.configs[name]['max_whole_level_cache_size'])
+                                    max_whole_level_cache_size=this.configs[name]['max_whole_level_cache_size'],
+                                    http_port=this.http_port)
                 html = html.encode('utf-8')
                 self.send_header('Content-Length', len(html))
                 self.end_headers()

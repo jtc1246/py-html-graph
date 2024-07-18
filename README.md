@@ -157,3 +157,15 @@ This part will only talk about Chrome and Opera, beacuse Edge can't bypass the i
 | Linux | `google-chrome --allow-running-insecure-content --user-data-dir="/tmp/chrome_dev_session"` | `opera --allow-running-insecure-content --user-data-dir="/tmp/opera_dev_session"` |
 
 ## Performance
+
+Environment: macOS, M1, Chrome, launch with --allow-running-insecure-content, use HTTP in data requests. Browser and server on different devices, in LAN, one side WiFi, one side Ethernet. Use [example.py](example.py).
+
+#### 1. Test directly
+
+<img src="resources/demo.gif" width="100%">
+
+#### 2. Manually 30 ms delay to the above environment
+
+Add `sleep(0.03)` in the server code for handling data HTTP requests.
+
+<img src="resources/demo_30ms.gif" width="100%">

@@ -1,3 +1,5 @@
+console.log('py-html-graph: a high-performance interactive numpy line chart viewer, good supplement for the awful matplotlib\n\nGithub: https://github.com/jtc1246/py-html-graph');
+
 const ACTION_IGNORE = 10000001;
 const ACTION_LEFTRIGHT = 10000002;
 const ACTION_UPDOWN = 10000003;

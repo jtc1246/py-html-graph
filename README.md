@@ -18,7 +18,7 @@ To use this tool, you need to have a python server and a browser.
 
 #### Requirement
 
-- Server: python>=3.9
+- Server: python >= 3.9
 - Browser: Chrome, Edge, Opera (can't use Safari or Firefox) (recommend Chrome and Opera)
 - Device: have touchpad or mouse, can't work with touch screen (recommend touchpad)
 

@@ -10,3 +10,4 @@ __pycache__/
 /*.egg-info/
 /resources/*.mp4
 .vscode/
+/keys/

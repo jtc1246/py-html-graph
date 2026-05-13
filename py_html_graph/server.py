@@ -8,6 +8,7 @@ import json
 from math import floor
 from myBasics import binToBase64
 import ssl
+import socket
 from mySecrets import hexToStr, toHex
 from myBasics import strToBase64, base64ToStr
 from html import escape as html_escape
@@ -436,9 +437,15 @@ class GraphServer:
         this.https_server = None
         if (this.http_port != None):
             this.http_server = ThreadingHTTPServer(('0.0.0.0', this.http_port), this.RequestClass)
+            this.http_server.request_queue_size = 10000
+            this.http_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 134217728)
+            this.http_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 134217728)
             start_new_thread(this.http_server.serve_forever, ())
         if (this.https_port != None):
             this.https_server = ThreadingHTTPServer(('0.0.0.0', this.https_port), this.RequestClass)
+            this.https_server.request_queue_size = 10000
+            this.https_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 134217728)
+            this.https_server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 134217728)
             this.https_server.socket = ssl.wrap_socket(this.https_server.socket, certfile=_base_path+'/ssl/certificate.crt', keyfile=_base_path+'/ssl/private.key', server_side=True)
             start_new_thread(this.https_server.serve_forever, ())
         print('Server started, ')

@@ -42,14 +42,6 @@ self.importScripts('data:application/javascript;base64,' + '$jtc.py-html-graph.i
  *  2. 如果失败 (timeout error 非200), 把对应区域的状态标记为 FREE, 对该level重新进行 一(3) 的流程
  */
 
-const CACHE_LOADED = 1;
-const CACHE_REQUESTING = 2;
-const CACHE_FREE = 0; // new Uint8Array 创建时默认就是 0
-
-var required_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
-var unnecessary_cache_area = {}; // key 为 level, value 为 {start: xxx, end: xxx}
-var cached_data = {};
-var whole_level_caches = {};
 var shared_bytes = null; // 长度为 1MB, Uint8Array
 var main_to_worker_signal = null; // 长度为 4, Int32Array
 var worker_to_main_signal = null; // 长度为 4, Int32Array
@@ -58,25 +50,33 @@ var TOTAL_DATA_POINTS;
 var VARIABLE_NUM;
 
 const MAX_CACHE_ALL_SIZE = '$jtc.py-html-graph.max-whole-level-cache-size$'; // user-configurable
-var MAX_LEVEL = -1;
-var MAX_CACHE_ALL_LEVEL = -1;
-
-var current_request_start = -1;
-var current_request_end = -1;
-var current_request_step = -1;
-var current_request_level = -1;
-var current_window_max = -1;
-var has_request = false;
-var mouse_position = 0.5;
 var current_request_promise_resolve = null;
 
 var ongoing_requests = new Set();
+var wasm = null;
+var wasmMem = null;
+var wasmBase64 = '$jtc.py-html-graph.inside.cache-wasm-base64$';
+
+function loadWasm() {
+    var wasmBytes = base64ToArrayBuffer(wasmBase64);
+    var module = new WebAssembly.Module(wasmBytes);
+    var instance = new WebAssembly.Instance(module, {
+        env: { emscripten_notify_memory_growth: function() {} }
+    });
+    wasm = instance.exports;
+    wasmMem = wasm.memory;
+}
+
+function wU8() { return new Uint8Array(wasmMem.buffer); }
+function wI32(ptr, len) { return new Int32Array(wasmMem.buffer, ptr, len); }
 
 
 var do_whole_level_cache = async () => {
-    var current = MAX_LEVEL;
+    var max_level = wasm.get_max_level();
+    var max_cache_all_level = wasm.get_max_cache_all_level();
+    var current = max_level;
     for (; ;) {
-        if (current < MAX_CACHE_ALL_LEVEL) {
+        if (current < max_cache_all_level) {
             break;
         }
         var i = current;
@@ -124,264 +124,17 @@ var do_whole_level_cache = async () => {
         if (response_data === -1) {
             continue;
         }
-        // TODO: 检查是否能用来完成当前的请求
-        whole_level_caches[i] = new Uint8Array(response_data);
-        if (has_request && current_request_level === i) {
+        var ptr = wasm.alloc_whole_cache(i, response_data.byteLength);
+        wU8().set(new Uint8Array(response_data), ptr);
+        if (wasm.get_has_request() && wasm.get_current_level() === i) {
             current_request_promise_resolve(1);
-            has_request = false;
+            wasm.clear_request();
             current_request_promise_resolve = null;
         }
         current--;
     }
 };
 
-
-var cache_init = () => {
-    MAX_LEVEL = Math.floor(Math.log2(TOTAL_DATA_POINTS / 40));
-    if (MAX_LEVEL < 0) {
-        MAX_LEVEL = 0;
-    }
-    MAX_CACHE_ALL_LEVEL = Math.floor(Math.log2(TOTAL_DATA_POINTS / (MAX_CACHE_ALL_SIZE / 4 / VARIABLE_NUM)));
-    if (MAX_CACHE_ALL_LEVEL < 0) {
-        MAX_CACHE_ALL_LEVEL = 0;
-    }
-    do_whole_level_cache();
-};
-
-var get_new_required_range = () => {
-    var new_range = {};
-    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
-    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
-    start = Math.round(start / Math.pow(2, current_request_level));
-    end = Math.round(end / Math.pow(2, current_request_level));
-    new_range[current_request_level] = {
-        start: start,
-        end: end
-    };
-    for (var i = current_request_level - 1; i >= current_request_level - 4; i--) {
-        if (i < 0) {
-            break;
-        }
-        var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
-        start = Math.round(start/Math.pow(2, i));
-        end = Math.round(end/Math.pow(2, i));
-        new_range[i] = {
-            start: start,
-            end: end
-        };
-    }
-    for (var i=current_request_level+1; i<=current_request_level+4; i++) {
-        if(i>MAX_LEVEL) {
-            break;
-        }
-        var mouse_value = current_request_start + mouse_position * (current_request_end - current_request_start);
-        var start = mouse_value - (1+mouse_position) * current_window_max * Math.pow(2, i);
-        var end = mouse_value + (2-mouse_position) * current_window_max * Math.pow(2, i);
-        start = Math.round(start/Math.pow(2, i));
-        end = Math.round(end/Math.pow(2, i));
-        new_range[i] = {
-            start: start,
-            end: end
-        };
-    }
-    var all_keys = Object.keys(new_range);
-    for(var i=0; i<all_keys.length; i++) {
-        var key = all_keys[i];
-        if(whole_level_caches[key] !== undefined) {
-            delete new_range[key];
-        }
-    }
-    all_keys = Object.keys(new_range);
-    for(var i=0; i<all_keys.length; i++) {
-        var key = all_keys[i];
-        var max_end = get_level_length(parseInt(key));
-        if(new_range[key].start < 0 && new_range[key].end > max_end){
-            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
-            new_range[key].start = 0;
-            new_range[key].end = max_end;
-            continue;
-        }
-        if(new_range[key].start < 0) {
-            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
-            new_range[key].end = new_range[key].end - new_range[key].start;
-            new_range[key].start = 0;
-        }
-        if(new_range[key].end > max_end) {
-            // 为了在两端放大时, 实际缩放中心不在鼠标位置, 而是在最左边或最右边
-            new_range[key].start = max_end - (new_range[key].end - new_range[key].start);
-            new_range[key].end = max_end;
-        }
-    }
-    return new_range;
-};
-
-var get_new_unnecessary_range = () => {
-    var new_range = {};
-    var start = current_request_start - 3 * current_window_max * Math.pow(2, current_request_level);
-    var end = current_request_end + 3 * current_window_max * Math.pow(2, current_request_level);
-    start = Math.round(start / Math.pow(2, current_request_level));
-    end = Math.round(end / Math.pow(2, current_request_level));
-    new_range[current_request_level] = {
-        start: start,
-        end: end
-    };
-    for (var i = current_request_level - 1; i >= current_request_level - 4; i--) {
-        if (i < 0) {
-            break;
-        }
-        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
-        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
-        start = Math.round(start/Math.pow(2, i));
-        end = Math.round(end/Math.pow(2, i));
-        new_range[i] = {
-            start: start,
-            end: end
-        };
-    }
-    for (var i=current_request_level+1; i<=current_request_level+4; i++) {
-        if(i>MAX_LEVEL) {
-            break;
-        }
-        var start = current_request_start - 2 * current_window_max * Math.pow(2, i);
-        var end = current_request_end + 2 * current_window_max * Math.pow(2, i);
-        start = Math.round(start/Math.pow(2, i));
-        end = Math.round(end/Math.pow(2, i));
-        new_range[i] = {
-            start: start,
-            end: end
-        };
-    }
-    var all_keys = Object.keys(new_range);
-    for(var i=0; i<all_keys.length; i++) {
-        var key = all_keys[i];
-        if(whole_level_caches[key] !== undefined) {
-            delete new_range[key];
-        }
-    }
-    all_keys = Object.keys(new_range);
-    for(var i=0; i<all_keys.length; i++) {
-        var key = all_keys[i];
-        if(new_range[key].start < 0) {
-            new_range[key].start = 0;
-        }
-        var max_end = get_level_length(parseInt(key));
-        if(new_range[key].end > max_end) {
-            new_range[key].end = max_end;
-        }
-    }
-    return new_range;
-};
-
-var update_data_range = (old_range, new_range) => {
-    var old_keys = Object.keys(old_range);
-    var new_keys = Object.keys(new_range);
-    for(var i=0;i<old_keys.length;i++){
-        if(new_range[old_keys[i]] === undefined) {
-            delete old_range[old_keys[i]];
-            delete cached_data[old_keys[i]];
-        }
-    }
-    old_keys = Object.keys(old_range);
-    for(var i=0;i<new_keys.length;i++){
-        var key = new_keys[i];
-        if(old_range[key] === undefined) {
-            var length = new_range[key].end - new_range[key].start;
-            var status_array = new Uint8Array(length);
-            var data = new Uint8Array(length * 4 * VARIABLE_NUM);
-            cached_data[key] = {
-                status: status_array,
-                data: data
-            };
-            continue;
-        }
-        var old_start = old_range[key].start;
-        var old_end = old_range[key].end;
-        var new_start = new_range[key].start;
-        var new_end = new_range[key].end;
-        if(new_start >= old_end || old_start >= new_end) {
-            delete cached_data[key];
-            var length = new_range[key].end - new_range[key].start;
-            var status_array = new Uint8Array(length);
-            var data = new Uint8Array(length * 4 * VARIABLE_NUM);
-            cached_data[key] = {
-                status: status_array,
-                data: data
-            };
-            continue;
-        }
-        var shared_start = Math.max(old_start, new_start);
-        var shared_end = Math.min(old_end, new_end);
-        var shared_start_in_old = shared_start - old_start;
-        var shared_start_in_new = shared_start - new_start;
-        var shared_length = shared_end - shared_start;
-        var shared_subarray_data = cached_data[key].data.subarray(shared_start_in_old * 4 * VARIABLE_NUM, (shared_start_in_old + shared_length) * 4 * VARIABLE_NUM);
-        var shared_subarray_status = cached_data[key].status.subarray(shared_start_in_old, shared_start_in_old + shared_length);
-        var new_data_array = new Uint8Array((new_end - new_start) * 4 * VARIABLE_NUM);
-        new_data_array.set(shared_subarray_data, shared_start_in_new * 4 * VARIABLE_NUM);
-        var new_status_array = new Uint8Array(new_end - new_start);
-        new_status_array.set(shared_subarray_status, shared_start_in_new);
-        cached_data[key] = {
-            status: new_status_array,
-            data: new_data_array
-        };
-    }
-};
-
-var create_requests = () => {
-    var all_keys = Object.keys(required_cache_area);
-    for (var j = 0; j < all_keys.length; j++){
-        var unrequested_parts = [];
-        var current_start = -1;
-        var global_start = required_cache_area[all_keys[j]].start;
-        var global_end = required_cache_area[all_keys[j]].end;
-        var offset = unnecessary_cache_area[all_keys[j]].start;
-        for(var i=global_start; i<global_end; i++){
-            if(current_start === -1){
-                if(cached_data[all_keys[j]].status[i -offset] === CACHE_FREE){
-                    current_start = i;
-                }
-                continue;
-            }
-            if(cached_data[all_keys[j]].status[i-offset] !== CACHE_FREE){
-                unrequested_parts.push([current_start, i]);
-                current_start = -1;
-            }
-        }
-        if(current_start !== -1){
-            unrequested_parts.push([current_start, global_end]);
-        }
-        for (var i=0;i<unrequested_parts.length;i++){
-            var this_start = unrequested_parts[i][0];
-            var this_end = unrequested_parts[i][1];
-            var this_level = parseInt(all_keys[j]);
-            var step = Math.pow(2, this_level);
-            var start_index = this_start;
-            var end_index = this_end;
-            if(this_level !== 0){
-                // 如果是 0, this_start 和 this_end 就是实际的
-                var start = this_start*step - step/2;
-                var end = start + (this_end - this_start - 1)*step+1;
-                this_start = start;
-                this_end = end;
-            }
-            var json_data = {
-                start: this_start,
-                end: this_end,
-                step: step,
-                tr: 1 // transpose
-            };
-            json_data = stringToHex(JSON.stringify(json_data));
-            var request_id = generate_request_id();
-            ongoing_requests.add(request_id);
-            var callback = create_request_callbacks(null, start_index, end_index, this_level, step, request_id);
-            request_manager.add(json_data, callback, (end_index - start_index) * 4 * VARIABLE_NUM);
-            cached_data[this_level].status.set(new Uint8Array(end_index - start_index).fill(CACHE_REQUESTING), start_index - offset);
-        }
-    }
-    request_manager.flush();
-};
 
 var create_request_callbacks = (request_, start_, end_, level_, step_, request_id_) => {
     var start = start_;
@@ -390,218 +143,48 @@ var create_request_callbacks = (request_, start_, end_, level_, step_, request_i
     var step = step_;
     var request = request_;
     var request_id = request_id_;
-
     function on_load(request) {
-        if(request.status !== 200){
-            return;
-        }
-        if(ongoing_requests.has(request_id) === false){
-            return;
-        }
+        if(request.status !== 200) return;
+        if(!ongoing_requests.has(request_id)) return;
         ongoing_requests.delete(request_id);
-        if(unnecessary_cache_area[level] === undefined){
-            return;
+        var data = new Uint8Array(request.response);
+        var ptr = wasm.alloc_temp_input(data.byteLength);
+        wU8().set(data, ptr);
+        var fulfilled = wasm.write_preload_response(level, start, end, data.byteLength);
+        if (fulfilled && current_request_promise_resolve) {
+            current_request_promise_resolve(2);
+            wasm.clear_request();
+            current_request_promise_resolve = null;
         }
-        var cache_start = unnecessary_cache_area[level].start;
-        var cache_end = unnecessary_cache_area[level].end;
-        if(start >= cache_end || end <= cache_start){
-            return;
-        }
-        var shared_start = Math.max(start, cache_start);
-        var shared_end = Math.min(end, cache_end);
-        var shared_start_in_request = shared_start - start;
-        var shared_start_in_cache = shared_start - cache_start;
-        var shared_length = shared_end - shared_start;
-        var response_data = new Uint8Array(request.response);
-        cached_data[level].data.set(response_data.subarray(shared_start_in_request * 4 * VARIABLE_NUM, (shared_start_in_request + shared_length) * 4 * VARIABLE_NUM), shared_start_in_cache * 4 * VARIABLE_NUM);
-        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
-        // then need to check whether this request data can fulfill the current user request
-        if(level !== current_request_level || has_request === false){
-            return;
-        }
-        var current_start = Math.floor(current_request_start / step) + 1;
-        if(level === 0){
-            current_start = current_request_start;
-        }
-        var length = Math.floor((current_request_end - 1 - current_request_start) / step) + 1;
-        var current_end = current_start + length;
-        if(current_start<cache_start || current_end>cache_end){
-            return;
-        }
-        for (var i = current_start; i < current_end; i++){
-            if(cached_data[level].status[i - cache_start] !== CACHE_LOADED){
-                return;
-            }
-        }
-        current_request_promise_resolve(2);
-        has_request = false;
-        current_request_promise_resolve = null;
-    };
+    }
     function fixed_interval_request() {
-        if(ongoing_requests.has(request_id) === false){
-            return;
-        }
-        if(required_cache_area[level] === undefined){
-            return;
-        }
-        var cache_start = required_cache_area[level].start;
-        var cache_end = required_cache_area[level].end;
-        if(start >= cache_end || end <= cache_start){
-            return;
-        }
-        var shared_start = Math.max(start, cache_start);
-        var shared_end = Math.min(end, cache_end);
-        var shared_start_in_cache = shared_start - cache_start;
-        var shared_length = shared_end - shared_start;
-        // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_FREE), shared_start_in_cache);
-        // 对 shared_start 到 shared_end 的范围进行重试
-        var retry_start = shared_start*step - step/2;
-        if(level === 0){
-            retry_start = shared_start;
-        }
-        var retry_end = retry_start + (shared_end - shared_start - 1)*step+1;
-        var json_data = {
-            start: retry_start,
-            end: retry_end,
-            step: step,
-            tr: 1 // transpose
-        };
+        if(!ongoing_requests.has(request_id)) return;
+        var result = wasm.check_retry(level, start, end, step);
+        if (!result) return;
+        var ri = wI32(wasm.get_retry_info(), 4);
+        var shared_start = ri[0], shared_end = ri[1], retry_start = ri[2], retry_end = ri[3];
+        var json_data = { start: retry_start, end: retry_end, step: step, tr: 1 };
         json_data = stringToHex(JSON.stringify(json_data));
         var callback = create_request_callbacks(null, shared_start, shared_end, level, step, request_id);
-        request_manager.add(json_data, callback, (shared_end - shared_start) * 4 * VARIABLE_NUM);``
-        // cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_REQUESTING), shared_start_in_cache);
-        // can only change the data point points where origin status is FREE, because other parts (put cache miss requested data
-        // into cache) may just put data itself
-        for (var i = shared_start; i < shared_end; i++){
-            if(cached_data[level].status[i - cache_start] === CACHE_FREE){
-                cached_data[level].status[i - cache_start] = CACHE_REQUESTING;
-            }
-        }
+        request_manager.add(json_data, callback, (shared_end - shared_start) * 4 * VARIABLE_NUM);
+        wasm.retry_mark(level, shared_start, shared_end);
     }
     setTimeout(fixed_interval_request, 50);
     return on_load;
 }
 
-var update_cache = (mouse_move_only) => {
-    // console.log('update_cache');
-    if (current_request_level === -1) {
-        // 这代表是图都没加载好的时候鼠标在移动, 什么都不要做
-        return;
-    }
-    required_cache_area = get_new_required_range();
-    if (mouse_move_only === false){
-        var new_unnecessary_area = get_new_unnecessary_range();
-        update_data_range(unnecessary_cache_area, new_unnecessary_area);
-        unnecessary_cache_area = new_unnecessary_area;
-    }
-    create_requests();
-}
-
-var access_data_tmp = (start, end, step, window_size, window_max) => {
-    var level = Math.round(Math.log2(step));
-    console.log('resolved by previous cache requests');
-    var length = Math.floor((end - 1 - start) / step) + 1;
-    var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
-    if (level == 0) {
-        cache_start = start;
-    }
-    // 1. 检查 whole_level_caches 是否能满足需求
-    if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
-        var this_level = whole_level_caches[level];
-        var response_bytes = shared_bytes;
-        var cache_length = this_level.length;
-        var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        var cache_end = cache_start + length; // actual end plus 1
-        for (var i = 0; i < VARIABLE_NUM; i++) {
-            var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
-            var byte_length = length * 4;
-            var response_start_byte = i * length * 4;
-            response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
-        }
-        has_request = false;
-        return length * 4 * VARIABLE_NUM;
-    }
-    // 2. 检查 cached_data 是否能满足需求
-    loop1: while (cached_data[level] !== undefined) {
-        // 为了可以使用 break, 不用 if
-        var this_start = cache_start;
-        var this_end = cache_start + length;
-        cache_start = unnecessary_cache_area[level].start;
-        var cache_end = unnecessary_cache_area[level].end;
-        if (this_start >= cache_end || this_end <= cache_start) {
-            break;
-        }
-        for (var i = this_start; i < this_end; i++) {
-            if (cached_data[level].status[i - cache_start] !== CACHE_LOADED) {
-                break loop1;
-            }
-        }
-        var result_bytes = cached_data[level].data.subarray((this_start - cache_start) * 4 * VARIABLE_NUM, (this_end - cache_start) * 4 * VARIABLE_NUM);
-        shared_bytes.set(transpose_4bytes(result_bytes, VARIABLE_NUM));
-        has_request = false;
-        return length * 4 * VARIABLE_NUM;
-    }
-    throw new Error('Resolved by cache but could not find data in cache.');
-};
 
 var access_data_2 = async (start, end, step, window_size, window_max) => {
-    var t1=performance.now();
-    current_request_start = start;
-    current_request_end = end;
-    current_request_step = step;
-    current_window_max = window_max;
-    var level = Math.round(Math.log2(step));
-    current_request_level = level;
-    has_request = true;
-    var length = Math.floor((end - 1 - start) / step) + 1;
-    var cache_start = Math.floor(start / step) + 1; // 开始的数据在 cache 中的位置
-    if (level == 0) {
-        cache_start = start;
+    var t1 = performance.now();
+    var result = wasm.access_data(start, end, step, window_size, window_max);
+    if (result > 0) {
+        // cache hit: 数据在 wasm io_buffer, 拷贝到 shared_bytes
+        var io_ptr = wasm.get_io_buffer();
+        shared_bytes.set(wU8().subarray(io_ptr, io_ptr + result));
+        return result;
     }
-    // 1. 检查 whole_level_caches 是否能满足需求
-    if (level >= MAX_CACHE_ALL_LEVEL && whole_level_caches[level] !== undefined) {
-        var this_level = whole_level_caches[level];
-        var response_bytes = shared_bytes;
-        var cache_length = this_level.length;
-        var cache_point_num = cache_length / 4 / VARIABLE_NUM;
-        var cache_end = cache_start + length; // actual end plus 1
-        for (var i = 0; i < VARIABLE_NUM; i++) {
-            var cache_start_byte = cache_point_num * 4 * i + 4 * cache_start;
-            var byte_length = length * 4;
-            var response_start_byte = i * length * 4;
-            response_bytes.set(this_level.subarray(cache_start_byte, cache_start_byte + byte_length), response_start_byte);
-        }
-        has_request = false;
-        // console.log(`cache hit by cache-all level, time: ${performance.now()-t1} ms`);
-        return length * 4 * VARIABLE_NUM;
-    }
-    // 2. 检查 cached_data 是否能满足需求
-    loop1: while (cached_data[level] !== undefined) {
-        // 为了可以使用 break, 不用 if
-        var this_start = cache_start;
-        var this_end = cache_start + length;
-        cache_start = unnecessary_cache_area[level].start;
-        var cache_end = unnecessary_cache_area[level].end;
-        if (this_start >= cache_end || this_end <= cache_start) {
-            break;
-        }
-        for (var i = this_start; i < this_end; i++) {
-            if (cached_data[level].status[i - cache_start] !== CACHE_LOADED) {
-                break loop1;
-            }
-        }
-        var result_bytes = cached_data[level].data.subarray((this_start - cache_start) * 4 * VARIABLE_NUM, (this_end - cache_start) * 4 * VARIABLE_NUM);
-        shared_bytes.set(transpose_4bytes(result_bytes, VARIABLE_NUM));
-        has_request = false;
-        // console.log(`cache hit, time: ${performance.now()-t1} ms`);
-        return length * 4 * VARIABLE_NUM;
-    }
-    // console.log('cache miss');
-    var json_data = {
-        start: start,
-        end: end,
-        step: step
-    };
+    // cache miss
+    var json_data = { start: start, end: end, step: step };
     json_data = stringToHex(JSON.stringify(json_data));
     var url = BASE_URL + '/' + json_data;
     var response_data = await new Promise((resolve) => {
@@ -613,41 +196,51 @@ var access_data_2 = async (start, end, step, window_size, window_max) => {
         }
         current_request_promise_resolve = resolve;
     });
-    if(response_data ===1 || response_data === 2){
-        var return_value = access_data_tmp(start, end, step, window_size, window_max);
-        has_request = false;
+    if (response_data === 1 || response_data === 2) {
+        // 被异步缓存请求满足
+        var rv = wasm.access_from_cache(start, end, step, window_size, window_max);
+        var io_ptr = wasm.get_io_buffer();
+        shared_bytes.set(wU8().subarray(io_ptr, io_ptr + rv));
+        wasm.clear_request();
         current_request_promise_resolve = null;
         console.log(`cache miss, took ${performance.now()-t1} ms`);
-        return return_value+1048576;
+        return rv + 1048576;
     }
+    // 直接 HTTP 响应
     var response_length = response_data.byteLength;
-    shared_bytes.set(new Uint8Array(response_data), 0);
-    has_request = false;
+    var io_ptr = wasm.get_io_buffer();
+    wU8().set(new Uint8Array(response_data), io_ptr);
+    shared_bytes.set(wU8().subarray(io_ptr, io_ptr + response_length));
+    wasm.store_miss_response(start, end, step, response_length);
+    wasm.clear_request();
     current_request_promise_resolve = null;
-    // put this response data into cache
-    while(cached_data[level] !== undefined){
-        var this_start = Math.floor(start / step) + 1; // cache_start 前面可能修改了, 不能用
-        if(level === 0){
-            this_start = start;
-        }
-        var this_end = this_start + length;
-        cache_start = unnecessary_cache_area[level].start;
-        var cache_end = unnecessary_cache_area[level].end;
-        if(this_start >= cache_end || this_end <= cache_start){
-            break;
-        }
-        var new_data = transpose_4bytes(new Uint8Array(response_data), length);
-        var shared_start = Math.max(this_start, cache_start);
-        var shared_end = Math.min(this_end, cache_end);
-        var shared_length = shared_end - shared_start;
-        var shared_start_in_request = shared_start - this_start;
-        var shared_start_in_cache = shared_start - cache_start;
-        cached_data[level].data.set(new_data.subarray(shared_start_in_request * 4 * VARIABLE_NUM, (shared_start_in_request + shared_length) * 4 * VARIABLE_NUM), shared_start_in_cache * 4 * VARIABLE_NUM);
-        cached_data[level].status.set(new Uint8Array(shared_length).fill(CACHE_LOADED), shared_start_in_cache);
-        break;
-    }
     console.log(`cache miss, took ${performance.now()-t1} ms`);
-    return response_length+1048576;
+    return response_length + 1048576;
+};
+
+
+var update_cache = (mouse_move_only) => {
+    if (wasm.get_current_level() === -1) return;
+    var count = wasm.update_cache_ranges(mouse_move_only ? 1 : 0);
+    if (count === 0) return;
+    var pptr = wasm.get_pending_ptr();
+    var view = wI32(pptr, count * 6);
+    for (var i = 0; i < count; i++) {
+        var level = view[i*6];
+        var act_start = view[i*6+1];
+        var act_end = view[i*6+2];
+        var step = view[i*6+3];
+        var idx_start = view[i*6+4];
+        var idx_end = view[i*6+5];
+        var json_data = { start: act_start, end: act_end, step: step, tr: 1 };
+        json_data = stringToHex(JSON.stringify(json_data));
+        var request_id = generate_request_id();
+        ongoing_requests.add(request_id);
+        var callback = create_request_callbacks(null, idx_start, idx_end, level, step, request_id);
+        request_manager.add(json_data, callback, (idx_end - idx_start) * 4 * VARIABLE_NUM);
+        wasm.mark_requesting(level, idx_start, idx_end);
+    }
+    request_manager.flush();
 };
 
 
@@ -708,7 +301,7 @@ var main_msg_listener = async (value) => {
             returned_value = 1;
             console.log("Statistics printed.");
         } else if (this_value >= 10000) {
-            mouse_position = (this_value - 10000) / 10000;
+            wasm.set_mouse_pos((this_value - 10000) / 10000);
             returned_value = 1;
         } else {
             throw "Unknown signal: " + this_value;
@@ -736,8 +329,10 @@ onmessage = (e) => {
     BASE_URL = e.data.base_url;
     TOTAL_DATA_POINTS = e.data.total_data_points;
     VARIABLE_NUM = e.data.variable_num;
+    loadWasm();
+    wasm.init(TOTAL_DATA_POINTS, VARIABLE_NUM, MAX_CACHE_ALL_SIZE);
     Atomics.waitAsync(main_to_worker_signal, 0, 0).value.then(main_msg_listener);
-    cache_init();
+    do_whole_level_cache();
     postMessage(0);
 };
 
@@ -778,32 +373,6 @@ var fix_up_with_remainder = (num, multiple, remainder) => {
         return Math.round(num - tmp + remainder);
     }
     return Math.round(num - tmp + multiple + remainder);
-};
-
-var get_level_length = (level)=>{
-    if(level === 0) {
-        return TOTAL_DATA_POINTS;
-    }
-    var step = Math.pow(2, level);
-    var start = - step / 2;
-    var end = fix_up_with_remainder(TOTAL_DATA_POINTS, step, step / 2) + 1;
-    var length = Math.floor((end - start -1) / step)+1;
-    return length;
-};
-
-var transpose_4bytes = (array, variable_num) => {
-    // create new one
-    if(array.length % (4 * variable_num) !== 0) {
-        throw new Error(`Array length ${array.length} is not a multiple of 4 * ${variable_num}`);
-    }
-    var new_array = new Uint8Array(array.length);
-    var length = array.length / 4 / variable_num;
-    for(var i=0;i<length;i++){
-        for(var j=0;j<variable_num;j++){
-            new_array.set(array.subarray(i*4*variable_num+j*4, i*4*variable_num+j*4+4), j*length*4+i*4);
-        }
-    }
-    return new_array;
 };
 
 var generate_request_id = ()=>{

@@ -24,6 +24,19 @@ _base_path = os.path.abspath(__file__)
 _base_path = os.path.dirname(_base_path)
 
 
+def fix_ssl():
+    if not hasattr(ssl, 'wrap_socket'):
+        def _wrap_socket(sock, keyfile=None, certfile=None, server_side=False, cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS, ca_certs=None, do_handshake_on_connect=True, suppress_ragged_eofs=True, ciphers=None):
+            ctx = ssl.SSLContext(ssl_version if server_side and ssl_version != ssl.PROTOCOL_TLS else (ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT))
+            if cert_reqs: ctx.verify_mode = cert_reqs
+            if ca_certs: ctx.load_verify_locations(ca_certs)
+            if certfile: ctx.load_cert_chain(certfile, keyfile)
+            if ciphers: ctx.set_ciphers(ciphers)
+            return ctx.wrap_socket(sock, server_side=server_side, do_handshake_on_connect=do_handshake_on_connect, suppress_ragged_eofs=suppress_ragged_eofs)
+        ssl.wrap_socket = _wrap_socket
+
+fix_ssl()
+
 def escape_html(s: str) -> str:
     s = html_escape(s)
     return s.replace('\n', ' ').replace(' ', '&nbsp;')
@@ -79,6 +92,9 @@ def generate_html(base_path: str,
     with open(base_path + 'cache_worker.js', 'r') as f:
         worker = f.read()
         worker = worker.replace("'$jtc.py-html-graph.max-whole-level-cache-size$'", str(max_whole_level_cache_size))
+    with open(base_path + 'cache_wasm.wasm', 'rb') as f:
+        wasm_base64 = binToBase64(f.read())
+    worker = worker.replace("'$jtc.py-html-graph.inside.cache-wasm-base64$'", f"'{wasm_base64}'")
     with open(base_path + 'http.js', 'r') as f:
         httpjs = f.read()
     httpjs = strToBase64(httpjs)

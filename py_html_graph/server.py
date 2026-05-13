@@ -265,14 +265,16 @@ class GraphServer:
                 end = json_data['end']
                 step = json_data['step']
                 transpose = 'tr' in json_data
-                selected = []
-                for i in range(start, end, step):
-                    selected.append(i)
-                if (selected[0] < 0):
-                    selected[0] = 0
-                if (selected[-1] > data_point_num - 1):
-                    selected[-1] = data_point_num - 1
-                array_ = array[:, selected]
+                if (type(start) == int and type(end) == int and type(step) == int
+                    and start >= 0 and end <= data_point_num and step > 0):
+                    array_ = array[:, start:end:step]
+                else:
+                    selected = list(range(start, end, step))
+                    if (selected[0] < 0):
+                        selected[0] = 0
+                    if (selected[-1] > data_point_num - 1):
+                        selected[-1] = data_point_num - 1
+                    array_ = array[:, selected]
                 if (transpose):
                     array_ = array_.T
                 data = array_.byteswap().tobytes()
@@ -297,14 +299,16 @@ class GraphServer:
                     start = current_request['start']
                     end = current_request['end']
                     step = current_request['step']
-                    selected = []
-                    for i in range(start, end, step):
-                        selected.append(i)
-                    if (selected[0] < 0):
-                        selected[0] = 0
-                    if (selected[-1] > data_point_num - 1):
-                        selected[-1] = data_point_num - 1
-                    array_ = array[:, selected]
+                    if (type(start) == int and type(end) == int and type(step) == int
+                        and start >= 0 and end <= data_point_num and step > 0):
+                        array_ = array[:, start:end:step]
+                    else:
+                        selected = list(range(start, end, step))
+                        if (selected[0] < 0):
+                            selected[0] = 0
+                        if (selected[-1] > data_point_num - 1):
+                            selected[-1] = data_point_num - 1
+                        array_ = array[:, selected]
                     data = array_.T.byteswap().tobytes()
                     results.append(data)
                     lengths.append(len(data))

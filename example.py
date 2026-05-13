@@ -2,38 +2,13 @@ from py_html_graph import GraphServer
 import numpy as np
 from time import time
 
-has_numba = True
-try:
-    from numba import jit
-except:
-    has_numba = False
+def set_data(array, num):
+    r1 = np.random.normal(loc=1.0000005, scale=0.001, size=(num - 1, 10)).astype(np.float32)
+    r2 = np.random.normal(loc=1.000002, scale=0.002, size=(num - 1,)).astype(np.float32)
+    factors = r1 / 2 + r2.reshape(-1, 1) / 2
+    array[1:, :] = array[0, :] * np.cumprod(factors, axis=0)
 
-if has_numba:
-    num = 50000000
-
-    @jit(nopython=True)
-    def set_data(array, num):
-        for i in range(0, num - 1):
-            array[i + 1, :] = array[i, :] * (
-                np.random.normal(loc=1.0000005, scale=0.001, size=10).reshape((1, 10)) / 2 +
-                np.random.normal(loc=1.000002, scale=0.002) / 2
-            )
-
-    # useless, just compile and warm up
-    tmp_data = np.zeros((500000, 10), dtype=np.float32)
-    tmp_data[0, :] = 100
-    set_data(tmp_data, 500000)
-else:
-    print('numba is not installed, this is not required. It can just speed up example data generation, irrelevant to the actual usage of py-html-graph library. If you want to generate more example data and faster, you can install it by running "pip install numba". Note that this is not mandatory.')
-    num = 2000000
-
-    def set_data(array, num):
-        for i in range(0, num - 1):
-            array[i + 1, :] = array[i, :] * (
-                np.random.normal(loc=1.0000005, scale=0.001, size=10).reshape((1, 10)) / 2 +
-                np.random.normal(loc=1.000002, scale=0.002) / 2
-            )
-
+num = 50000000
 
 data = np.zeros((num, 10), dtype=np.float32)
 data[0, :] = 100

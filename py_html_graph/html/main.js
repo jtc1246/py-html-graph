@@ -889,6 +889,19 @@ function createChart() {
     var chart_y_max = config.options.scales.y.max;
     set_y_value(chart_y_min, chart_y_max);
     set_x_value();
+    if (myChart) {
+        myChart.data.labels = config.data.labels;
+        for (var idx = 0; idx < myChart.data.datasets.length; idx++) {
+            myChart.data.datasets[idx].data = config.data.datasets[idx].data;
+            myChart.data.datasets[idx].borderWidth = config.data.datasets[idx].borderWidth;
+        }
+        myChart.options.scales.x.min = config.options.scales.x.min;
+        myChart.options.scales.x.max = config.options.scales.x.max;
+        myChart.options.scales.y.min = config.options.scales.y.min;
+        myChart.options.scales.y.max = config.options.scales.y.max;
+        myChart.update('none');
+        return myChart;
+    }
     return new Chart(ctx, config);
 }
 
@@ -1130,8 +1143,10 @@ var update_line_width_only = (new_width) => {
     prev_config.data.datasets.forEach((dataset) => {
         dataset.borderWidth = new_width;
     });
-    myChart.destroy();
-    myChart = new Chart(ctx, prev_config);
+    for (var idx = 0; idx < myChart.data.datasets.length; idx++) {
+        myChart.data.datasets[idx].borderWidth = new_width;
+    }
+    myChart.update('none');
     var time = performance.now() - t;
     if (time > 500) {
         t = performance.now();
@@ -1158,9 +1173,6 @@ var update_line_width_only = (new_width) => {
 
 // Function to update the chart view window by recreating the chart
 function updateChart() {
-    if (myChart) {
-        myChart.destroy();
-    }
     myChart = createChart();
     var time = performance.now() - t;
     if (time > 500) {

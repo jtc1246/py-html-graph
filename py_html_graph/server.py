@@ -158,6 +158,7 @@ class GraphServer:
         this.configs = {}
 
         class Request(BaseHTTPRequestHandler):
+            protocol_version = 'HTTP/1.1'
             def do_GET(self):
                 path_segments = self.path.split('/')[1:]
                 if (path_segments[-1] == ''):

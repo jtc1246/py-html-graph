@@ -21,6 +21,7 @@ static int G_req_level = -1;
 static int G_req_wmax = -1;
 static int G_has_req = 0;
 static double G_mouse = 0.5;
+static int G_required_updown_level = -1; // 默认 4
 
 struct Cache {
     uint8_t* status;
@@ -129,20 +130,20 @@ static void calc_unne(Range* out) {
     int lv = G_req_level, wm = G_req_wmax, rs = G_req_start, re = G_req_end;
     { // 当前 level (和 required 一样是 3x)
         double p = (double)(1 << lv);
-        out[lv].start = (int)round((rs - 3.0 * wm * p) / p);
-        out[lv].end = (int)round((re + 3.0 * wm * p) / p);
+        out[lv].start = (int)round((rs - 10.0 * wm * p) / p);
+        out[lv].end = (int)round((re + 10.0 * wm * p) / p);
         out[lv].valid = 1;
     }
-    for (int i = lv - 1; i >= lv - 4 && i >= 0; i--) {
+    for (int i = lv - 1; i >= lv - 7 && i >= 0; i--) {
         double p = (double)(1 << i);
-        out[i].start = (int)round((rs - 2.0 * wm * p) / p);
-        out[i].end = (int)round((re + 2.0 * wm * p) / p);
+        out[i].start = (int)round((rs - 5.0 * wm * p) / p);
+        out[i].end = (int)round((re + 5.0 * wm * p) / p);
         out[i].valid = 1;
     }
-    for (int i = lv + 1; i <= lv + 4 && i <= G_max_lv; i++) {
+    for (int i = lv + 1; i <= lv + 7 && i <= G_max_lv; i++) {
         double p = (double)(1 << i);
-        out[i].start = (int)round((rs - 2.0 * wm * p) / p);
-        out[i].end = (int)round((re + 2.0 * wm * p) / p);
+        out[i].start = (int)round((rs - 5.0 * wm * p) / p);
+        out[i].end = (int)round((re + 5.0 * wm * p) / p);
         out[i].valid = 1;
     }
     for (int i = 0; i < MAX_LEVELS; i++)

@@ -429,8 +429,11 @@ class GraphServer:
         config['y_title'] = y_title
         config['x_start_ms'] = x_start_ms
         config['x_step_ms'] = x_step_ms
-        config['max_whole_level_cache_size'] = 0
+        config['max_whole_level_cache_size'] = 50000000
         this.configs[name] = config
+    
+    def set_max_whole_level_cache_bytes(this, name: str, size: int) -> None:
+        this.configs[name]['max_whole_level_cache_size'] = size
     
     
     def start(this) -> None:
